@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>870</width>
+    <width>891</width>
     <height>524</height>
    </rect>
   </property>
@@ -149,12 +149,39 @@
        <string>Padrão de fase</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="1" column="2">
+       <item row="6" column="7">
+        <widget class="QPushButton" name="pbOptimize">
+         <property name="text">
+          <string>&amp;Otimizar</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="8">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="0">
         <widget class="QLabel" name="lblW">
          <property name="text">
           <string>Cintura do filtro:</string>
          </property>
         </widget>
+       </item>
+       <item row="6" column="5">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
        <item row="1" column="1">
         <widget class="QSpinBox" name="sbX">
@@ -175,14 +202,34 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="2">
-        <widget class="QLabel" name="lblStepDuration">
+       <item row="6" column="3">
+        <widget class="QLabel" name="lblA">
          <property name="text">
-          <string>Duração do passo (s):</string>
+          <string>Amplitude do filtro:</string>
          </property>
         </widget>
        </item>
-       <item row="1" column="3">
+       <item row="1" column="5">
+        <spacer name="horizontalSpacer">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="1" column="7">
+        <widget class="QPushButton" name="pbUpdate">
+         <property name="text">
+          <string>A&amp;tualizar</string>
+         </property>
+        </widget>
+       </item>
+       <item row="6" column="1">
         <widget class="QDoubleSpinBox" name="dsbW">
          <property name="maximumSize">
           <size>
@@ -204,20 +251,6 @@
          </property>
         </widget>
        </item>
-       <item row="6" column="6">
-        <widget class="QPushButton" name="pbOptimize">
-         <property name="text">
-          <string>&amp;Otimizar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="0">
-        <widget class="QLabel" name="lblLearningRate">
-         <property name="text">
-          <string>Taxa de aprendizagem:</string>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="0">
         <widget class="QLabel" name="lblX">
          <property name="text">
@@ -225,40 +258,14 @@
          </property>
         </widget>
        </item>
-       <item row="4" column="0">
-        <widget class="QLabel" name="lblY">
-         <property name="text">
-          <string>Posição Y:</string>
+       <item row="0" column="0" colspan="8">
+        <widget class="QGraphicsView" name="gvPhase">
+         <property name="focusPolicy">
+          <enum>Qt::NoFocus</enum>
          </property>
         </widget>
        </item>
-       <item row="4" column="2">
-        <widget class="QLabel" name="lblA">
-         <property name="text">
-          <string>Amplitude do filtro:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="1">
-        <widget class="QSpinBox" name="sbY">
-         <property name="maximumSize">
-          <size>
-           <width>52</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indica a posição Y do padrão de fase no canvas do SLM&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-        </widget>
-       </item>
-       <item row="4" column="3">
+       <item row="6" column="4">
         <widget class="QDoubleSpinBox" name="dsbA">
          <property name="maximumSize">
           <size>
@@ -283,76 +290,29 @@
          </property>
         </widget>
        </item>
-       <item row="5" column="0" colspan="7">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="3">
-        <widget class="QDoubleSpinBox" name="dsbStepDuration">
-         <property name="minimum">
-          <double>1.000000000000000</double>
-         </property>
-         <property name="maximum">
-          <double>300.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>2.500000000000000</double>
+       <item row="1" column="3">
+        <widget class="QLabel" name="lblY">
+         <property name="text">
+          <string>Posição Y:</string>
          </property>
         </widget>
        </item>
        <item row="1" column="4">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
+        <widget class="QSpinBox" name="sbY">
+         <property name="maximumSize">
           <size>
-           <width>40</width>
-           <height>20</height>
+           <width>52</width>
+           <height>32</height>
           </size>
          </property>
-        </spacer>
-       </item>
-       <item row="6" column="4">
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+         <property name="toolTip">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indica a posição Y do padrão de fase no canvas do SLM&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
+         <property name="whatsThis">
+          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
          </property>
-        </spacer>
-       </item>
-       <item row="1" column="6">
-        <widget class="QPushButton" name="pbUpdate">
-         <property name="text">
-          <string>A&amp;tualizar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0" colspan="7">
-        <widget class="QGraphicsView" name="gvPhase">
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1">
-        <widget class="QDoubleSpinBox" name="dsbLearningRate">
-         <property name="decimals">
-          <number>2</number>
-         </property>
-         <property name="maximum">
-          <double>3000.000000000000000</double>
-         </property>
-         <property name="value">
-          <double>0.500000000000000</double>
+         <property name="minimum">
+          <number>1</number>
          </property>
         </widget>
        </item>
@@ -366,7 +326,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>870</width>
+     <width>891</width>
      <height>30</height>
     </rect>
    </property>
@@ -406,12 +366,7 @@
  </widget>
  <tabstops>
   <tabstop>sbX</tabstop>
-  <tabstop>dsbW</tabstop>
-  <tabstop>sbY</tabstop>
-  <tabstop>dsbA</tabstop>
   <tabstop>pbUpdate</tabstop>
-  <tabstop>dsbLearningRate</tabstop>
-  <tabstop>dsbStepDuration</tabstop>
   <tabstop>pbOptimize</tabstop>
   <tabstop>pbCapture</tabstop>
   <tabstop>cbPosition</tabstop>

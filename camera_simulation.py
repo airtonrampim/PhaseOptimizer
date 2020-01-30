@@ -29,5 +29,5 @@ class Camera():
 
     def get_image(self):
         image = np.abs(self.field)[::-1, ::-1]
-        return (image - np.min(image))/np.ptp(image)
+        return (255*(image - np.min(image))/np.ptp(image)).astype(np.uint8)
 

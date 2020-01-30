@@ -21,4 +21,4 @@ class Camera():
         image = self.camera.retrieveBuffer()
         self.camera_shape = (image.getRows(), image.getCols())
         image_array = np.array(image.getData(), dtype='uint8').reshape(self.camera_shape)
-        return (image_array - np.min(image_array))/np.ptp(image_array)
+        return image_array

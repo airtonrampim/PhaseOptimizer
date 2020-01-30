@@ -30,11 +30,12 @@ def generate_pishift(image, opt_args, slm_shape, overwrite, binary):
     h_i, w_i = image.shape
     x0, y0, w, a = opt_args
 
-    x = np.arange(1, w_i + 1)
-    y = np.arange(1, h_i + 1)
-    X, Y = np.meshgrid(x, y)
-    xf, yf = centroid(image)
-    inverse_filter = 1 - a*np.exp(-((X - xf)**2 + (Y - yf)**2)/(w**2))
+    if (w is not None) and (a is not None):
+        x = np.arange(1, w_i + 1)
+        y = np.arange(1, h_i + 1)
+        X, Y = np.meshgrid(x, y)
+        xf, yf = centroid(image)
+        inverse_filter = 1 - a*np.exp(-((X - xf)**2 + (Y - yf)**2)/(w**2))
 
     imagen = inverse_filter*image
     imagen = (imagen - np.min(imagen))/np.ptp(imagen)

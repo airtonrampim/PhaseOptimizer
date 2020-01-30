@@ -7,7 +7,7 @@ import numpy as np
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, flatness_cost, flatness_gradient
+from optimize import centroid, align_image
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -26,7 +26,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.phase = None
         self.camera = Camera(SLM_SHAPE)
         self.image = None
-        self.startOptimizer = False
+        self.image_correction = None
 
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -36,9 +36,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
         self.ui.pbCapture.clicked.connect(self.pbCaptureClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
-        
-        self.timer = QtCore.QTimer(self)
-        self.timer.timeout.connect(self.optimizePhase)
         
         self.pbCaptureClicked()
         self.cbPositionIndexChanged()
@@ -82,6 +79,7 @@ class MainWindow(QtWidgets.QMainWindow):
         if filename:
             image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
             self.image = image
+            self.image_correction = image
 
             camera_image = self.camera.get_image()
             x_c, y_c = centroid(camera_image)
@@ -141,9 +139,8 @@ class MainWindow(QtWidgets.QMainWindow):
         scene.addWidget(canvas)
         self.ui.gvCameraSideView.setScene(scene)
 
-    def pbUpdateClicked(self):
-        opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), self.ui.dsbW.value(), self.ui.dsbA.value())
-        self.phase = generate_pishift(self.image, opt_args = opt_args, overwrite = OVERWRITE, slm_shape = SLM_SHAPE, binary = BINARY)
+    def update(self, opt_args):
+        self.phase = generate_pishift(self.image_correction, opt_args = opt_args, overwrite = OVERWRITE, slm_shape = SLM_SHAPE, binary = BINARY)
         self.camera.set_phase(self.phase)
         camera_image = self.camera.get_image()
 
@@ -151,47 +148,21 @@ class MainWindow(QtWidgets.QMainWindow):
         self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
         self.cbPositionIndexChanged()
         self.pbShowClicked()
-    
+
+    def pbUpdateClicked(self):
+        opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
+        self.update(opt_args)
+
     def pbCaptureClicked(self):
         self.loadFigureGraphicsView(self.camera.get_image(), self.ui.gvCamera)
 
     def pbOptimizeClicked(self):
-        self.startOptimizer = not self.startOptimizer
-
-        self.ui.pbOptimize.setText("&Parar" if self.startOptimizer else "&Otimizar")
-        enableComponents = not self.startOptimizer
-        self.ui.dsbW.setEnabled(enableComponents)
-        self.ui.dsbA.setEnabled(enableComponents)
-        self.ui.pbCapture.setEnabled(enableComponents)
-        self.ui.pbShow.setEnabled(enableComponents)
-        self.ui.pbUpdate.setEnabled(enableComponents)
-
-        if self.startOptimizer:
-            self.timer.setInterval(1E3*self.ui.dsbStepDuration.value())
-            self.timer.start()
-        else:
-            self.timer.stop()
-
-    def optimizePhase(self):
         camera_image = self.camera.get_image()
-        x0, y0, w, a = self.ui.sbX.value(), self.ui.sbY.value(), self.ui.dsbW.value(), self.ui.dsbA.value()
+        aligned_image = align_image(camera_image, self.image, True)
+        self.image_correction = np.abs(aligned_image - self.image)
         
-        w = 1E2*np.log(w)/np.max(camera_image.shape)
-        
-        f_w, f_a = flatness_gradient(camera_image, x0*self.camera.camera_shape[1]/SLM_SHAPE[1], y0*self.camera.camera_shape[0]/SLM_SHAPE[0], w, a)
-        alpha = self.ui.dsbLearningRate.value()
-
-        w -= alpha*f_w
-        a -= alpha*f_a
-
-
-        w = np.exp(1E-2*w*np.max(camera_image.shape))
-
-        QtCore.qDebug('grad F = (%f, %f)' % (f_w, f_a))
-        self.ui.dsbW.setValue(w)
-        self.ui.dsbA.setValue(a)
-        
-        self.pbUpdateClicked()
+        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), self.ui.dsbW.value(), self.ui.dsbA.value()
+        self.update(opt_args)
 
 app = QtWidgets.QApplication(sys.argv)
 
