@@ -82,8 +82,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.image_correction = image
 
             camera_image = self.camera.get_image()
-            x_c, y_c = centroid(camera_image)
-            x_i, y_i = centroid(image)
+            x_c, y_c = centroid(camera_image/255.)
+            x_i, y_i = centroid(image/255.)
 
             scale = 1 if OVERWRITE else 2
             h, w = scale*np.array(image.shape)
@@ -159,9 +159,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
         aligned_image = align_image(camera_image, self.image, True)
-        self.image_correction = np.abs(aligned_image - self.image)
+        self.image_correction = self.image - np.where(aligned_image > self.image, aligned_image - self.image, 0)
         
-        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), self.ui.dsbW.value(), self.ui.dsbA.value()
+        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None#self.ui.dsbW.value(), self.ui.dsbA.value()
         self.update(opt_args)
 
 app = QtWidgets.QApplication(sys.argv)

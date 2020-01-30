@@ -37,6 +37,8 @@ def align_image(image, camera, affine_transform):
         kl_image = np.float32(kl_image)
 
         warp, match_res = cv2.estimateAffinePartial2D(kl_image, kl_camera)
+        if warp is None:
+            warp, match_res = cv2.estimateAffine2D(kl_image, kl_camera)
 
         #confidence = 1E2*np.nonzero(match_res)[0].size/match_res.size
         #print(r'Nivel de confidencia obtida para a transformada: %.2f%%' % confidence)
@@ -50,24 +52,20 @@ def align_image(image, camera, affine_transform):
         if np.all(camera_ratio == image_ratio):
             return cv2.resize(image, camera.shape[::-1])
         else:
-            div_ratio = camera_shape // image_shape
+            div_ratio = image_shape//camera_shape
             resized_image = image
             if np.all(div_ratio - 1): # Redimensionar a imagem
                 m = np.min(div_ratio)
-                resized_image = cv2.resize(image, (m*image_shape)[::-1])
+                resized_image = cv2.resize(image, tuple(m*image_shape)[::-1])
             resized_image_shape = np.array(resized_image.shape)
             new_shape = np.max([camera_shape, resized_image_shape], axis=0)
             new_image = np.zeros(new_shape)
             
             putimg_i = np.abs(new_shape - resized_image_shape)//2 + (np.abs(new_shape - resized_image_shape)%2)
-            putimg_f = new_shape - putimg_i
-            
-            new_image[putimg_i[0]:putimg_f[0], putimg_i[1]:putimg_f[1]] = resized_image
+            new_image[putimg_i[0]:(putimg_i[0] + resized_image.shape[0]), putimg_i[1]:(putimg_i[1] + resized_image.shape[1])] = resized_image
             
             cutimg_i = np.abs(new_shape - camera_shape)//2 + (np.abs(new_shape - camera_shape)%2)
-            cutimg_f = new_shape - cutimg_i
-
-            return new_image[cutimg_i[0]:cutimg_f[0], cutimg_i[1]:cutimg_f[1]]
+            return new_image[cutimg_i[0]:(cutimg_i[0] + camera.shape[0]), cutimg_i[1]:(cutimg_i[1] + camera.shape[1])]
 
 def flatness_cost(image):
     blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
