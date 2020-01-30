@@ -13,6 +13,7 @@ class Camera():
     def __init__(self, shape):
         self.beam = generate_beam(shape, 350)
         self.field = self.beam
+        self.camera_shape = shape
 
     def set_phase(self, phase):
         field = self.beam*np.exp(1j*phase)
