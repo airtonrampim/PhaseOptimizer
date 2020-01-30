@@ -13,7 +13,7 @@ Type=Script Application
 [Launch][Launch Configuration 0][Data]
 Arguments=
 EnvironmentGroup=
-Executable=file:///home/airton/Projetos/kdev/PhaseOptimizer2/PhaseOptimizer2.py
+Executable=file:///home/airton/Projetos/kdev/PhaseOptimizer/PhaseOptimizer.py
 Execute on Remote Host=false
 Interpreter=sage-python
 Output Filtering Mode=2
