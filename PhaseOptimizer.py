@@ -158,10 +158,10 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
-        aligned_image = align_image(camera_image, self.image, True)
+        aligned_image = align_image(self.image, camera_image)
         self.image_correction = self.image - np.where(aligned_image > self.image, aligned_image - self.image, 0)
         
-        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None#self.ui.dsbW.value(), self.ui.dsbA.value()
+        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None
         self.update(opt_args)
 
 app = QtWidgets.QApplication(sys.argv)

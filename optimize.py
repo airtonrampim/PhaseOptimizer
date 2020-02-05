@@ -1,7 +1,42 @@
 import cv2
 import numpy as np
 
-def align_image(image, camera, affine_transform):
+def get_corners(image):
+    # blur image
+    image_inv = 255 - image
+    blur = cv2.GaussianBlur(image_inv, (3,3), 0)
+
+    # do adaptive threshold on gray image
+    thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 75, 2)
+
+    # apply morphology
+    kernel = np.ones((5,5), np.uint8)
+    rect = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    rect = cv2.morphologyEx(rect, cv2.MORPH_CLOSE, kernel)
+
+    # thin
+    kernel = np.ones((5,5), np.uint8)
+    rect = cv2.morphologyEx(rect, cv2.MORPH_ERODE, kernel)
+
+    # get largest contour
+    contours = cv2.findContours(rect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = contours[0] if len(contours) == 2 else contours[1]
+    
+    big_contour = 0
+    for c in contours:
+        area_thresh = 0
+        area = cv2.contourArea(c)
+        if area > area_thresh:
+            area = area_thresh
+            big_contour = c
+
+    # get rotated rectangle from contour
+    rot_rect = cv2.minAreaRect(big_contour)
+    box = cv2.boxPoints(rot_rect)
+    box = np.int0(box)
+    return box
+
+def align_image(image, camera):
     """
     Ajusta a imagem da camera com base na imagem original da armadilha
 
@@ -17,55 +52,12 @@ def align_image(image, camera, affine_transform):
     ndarray
        Imagem da camera reposicionada/redimensionada e rotacionada na posicao mais compativel com a imagem inicial
     """
-    if affine_transform:
-        orb = cv2.ORB_create()
-
-        kp_image, des_image = orb.detectAndCompute(image, None)
-        kp_camera, des_camera = orb.detectAndCompute(camera, None)
-
-        bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck = True)
-
-        matches = sorted(bf.match(des_camera, des_image), key = lambda x: x.distance)
-
-        kl_image, kl_camera = [], []
-
-        for m in matches:
-            kl_camera.append(kp_camera[m.queryIdx].pt)
-            kl_image.append(kp_image[m.trainIdx].pt)
-
-        kl_camera = np.float32(kl_camera)
-        kl_image = np.float32(kl_image)
-
-        warp, match_res = cv2.estimateAffinePartial2D(kl_image, kl_camera)
-        if warp is None:
-            warp, match_res = cv2.estimateAffine2D(kl_image, kl_camera)
-
-        #confidence = 1E2*np.nonzero(match_res)[0].size/match_res.size
-        #print(r'Nivel de confidencia obtida para a transformada: %.2f%%' % confidence)
-        
-        return cv2.warpAffine(image, warp, camera.shape[::-1])
-    else:
-        camera_shape = np.array(camera.shape)
-        camera_ratio = camera_shape//np.gcd(*camera.shape)
-        image_shape = np.array(image.shape)
-        image_ratio = image_shape//np.gcd(*image.shape)
-        if np.all(camera_ratio == image_ratio):
-            return cv2.resize(image, camera.shape[::-1])
-        else:
-            div_ratio = image_shape//camera_shape
-            resized_image = image
-            if np.all(div_ratio - 1): # Redimensionar a imagem
-                m = np.min(div_ratio)
-                resized_image = cv2.resize(image, tuple(m*image_shape)[::-1])
-            resized_image_shape = np.array(resized_image.shape)
-            new_shape = np.max([camera_shape, resized_image_shape], axis=0)
-            new_image = np.zeros(new_shape)
-            
-            putimg_i = np.abs(new_shape - resized_image_shape)//2 + (np.abs(new_shape - resized_image_shape)%2)
-            new_image[putimg_i[0]:(putimg_i[0] + resized_image.shape[0]), putimg_i[1]:(putimg_i[1] + resized_image.shape[1])] = resized_image
-            
-            cutimg_i = np.abs(new_shape - camera_shape)//2 + (np.abs(new_shape - camera_shape)%2)
-            return new_image[cutimg_i[0]:(cutimg_i[0] + camera.shape[0]), cutimg_i[1]:(cutimg_i[1] + camera.shape[1])]
+    image_box = get_corners(image)
+    mask = np.where(image > 0, 1, 0)
+    camera_box = get_corners(camera)
+    warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
+    result = mask*cv2.warpAffine(camera, warp, image.shape[::-1])
+    return result
 
 def flatness_cost(image):
     blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
