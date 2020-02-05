@@ -7,7 +7,7 @@ import numpy as np
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, align_image
+from optimize import centroid, align_image, get_warp
 
 from PyQt5 import QtWidgets
 from PyQt5 import QtGui
@@ -27,6 +27,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera = Camera(SLM_SHAPE)
         self.image = None
         self.image_correction = None
+        self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
 
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -36,6 +37,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
         self.ui.pbCapture.clicked.connect(self.pbCaptureClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
+        self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
         self.pbCaptureClicked()
         self.cbPositionIndexChanged()
@@ -99,7 +101,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.sbY.setMaximum(y_max - h)
             self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.camera_shape[0] - scale*y_i)))
 
-            opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), self.ui.dsbW.value(), self.ui.dsbA.value())
+            opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
             phase = generate_pishift(image, opt_args = opt_args, overwrite = OVERWRITE, slm_shape = SLM_SHAPE, binary = BINARY)
             self.phase = phase
             self.camera.set_phase(phase)
@@ -158,11 +160,17 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
-        aligned_image = align_image(self.image, camera_image)
+        aligned_image = align_image(self.image, camera_image, self.warp)
         self.image_correction = self.image - np.where(aligned_image > self.image, aligned_image - self.image, 0)
         
         opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None
         self.update(opt_args)
+    
+    def pbAlignClicked(self):
+        camera_image = self.camera.get_image()
+        warp, match_res = get_warp(self.image, camera_image)
+        self.warp = warp
+        self.ui.lblConfidence.setText("Nível de confidência: %.2f%%" % (100*match_res))
 
 app = QtWidgets.QApplication(sys.argv)
 

@@ -36,28 +36,15 @@ def get_corners(image):
     box = np.int0(box)
     return box
 
-def align_image(image, camera):
-    """
-    Ajusta a imagem da camera com base na imagem original da armadilha
-
-    Parameters
-    ----------
-    image: ndarray
-       Imagem original da armadilha
-    camera: ndarray
-       Imagem obtida pela camera
-
-    Returns
-    -------
-    ndarray
-       Imagem da camera reposicionada/redimensionada e rotacionada na posicao mais compativel com a imagem inicial
-    """
-    image_box = get_corners(image)
+def align_image(image, camera, warp):
     mask = np.where(image > 0, 1, 0)
+    return mask*cv2.warpAffine(camera, warp, image.shape[::-1])
+
+def get_warp(image, camera):
+    image_box = get_corners(image)
     camera_box = get_corners(camera)
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
-    result = mask*cv2.warpAffine(camera, warp, image.shape[::-1])
-    return result
+    return warp, np.sum(match_res)/len(match_res)
 
 def flatness_cost(image):
     blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
