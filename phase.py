@@ -1,7 +1,7 @@
 import numpy as np
 from optimize import centroid
 
-def generate_pishift(image, opt_args, slm_shape, overwrite, binary):
+def generate_pishift(image, opt_args, slm_shape, binary):
     """
     Calcula o padrao de fase usando a tecnica de contraste de fase generalizado de ordem zero
     
@@ -18,8 +18,6 @@ def generate_pishift(image, opt_args, slm_shape, overwrite, binary):
         O padrao e None, em que o filtro nao e aplicado.
     slm_shape: tuple, optional
         Tamanho do SLM. O padrao e (1024, 1280)
-    overwrite: bool, optional
-        Indica se as linhas constantes $\pi$ serao sobrescritas na imagem, gerando um padrao de fase com o mesmo tamanho da imagem. O padrao e False
     
     Returns
     -------
@@ -40,19 +38,16 @@ def generate_pishift(image, opt_args, slm_shape, overwrite, binary):
     imagen = inverse_filter*image
     imagen = (imagen - np.min(imagen))/np.ptp(imagen)
     phase = None
-    if overwrite:
-        if binary:
-            phase = np.zeros_like(image)
-            phase[np.nonzero(image)] = 128*imagen[np.nonzero(image)]
-        else:
-            phase = 128*np.sqrt(imagen)/np.pi
-        phase[1::2,:] = 128
+
+    if binary:
+        phase = np.zeros_like(image)
+        phase[np.nonzero(image)] = 128*imagen[np.nonzero(image)]
     else:
-        phase = 128*np.ones(2*np.array(imagen.shape))
-        phase[0::2, 0::2] = 128*np.sqrt(imagen)/np.pi
-        phase[0::2, 1::2] = phase[0::2, 0::2]
+        phase = 128*np.sqrt(imagen)/np.pi
     
     h_p, w_p = phase.shape
     phase_slm = np.zeros(slm_shape)
     phase_slm[y0:(y0 + h_p), x0:(x0 + w_p)] = phase
+    phase_slm[1::2,:] = 128
+
     return phase_slm

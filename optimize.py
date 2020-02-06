@@ -46,6 +46,29 @@ def get_warp(image, camera):
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 
+def get_warp2(image, camera):
+    orb = cv2.ORB_create()
+    kp_image, des_image = orb.detectAndCompute(image, None)
+    kp_camera, des_camera = orb.detectAndCompute(camera, None)
+    
+    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck = True)
+    
+    matches = sorted(bf.match(des_camera, des_image), key = lambda x: x.distance)
+    
+    kl_image, kl_camera = [], []
+    
+    for m in matches:
+        kl_camera.append(kp_camera[m.queryIdx].pt)
+        kl_image.append(kp_image[m.trainIdx].pt)
+    
+    kl_camera = np.float32(kl_camera)
+    kl_image = np.float32(kl_image)
+    
+    warp, match_res = cv2.estimateAffine2D(kl_image, kl_camera)
+    if warp is None:
+        warp, match_res = cv2.estimateAffinePartial2D(kl_image, kl_camera)
+    return warp, np.sum(match_res)/len(match_res)
+
 def flatness_cost(image):
     blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
     _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)

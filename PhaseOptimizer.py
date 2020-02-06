@@ -16,7 +16,6 @@ from PyQt5 import QtTest
 import mainwindow
 
 SLM_SHAPE = (1024, 1280)
-OVERWRITE = False
 BINARY = True
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -28,6 +27,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.image = None
         self.image_correction = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
+        
+        self.x_ref = SLM_SHAPE[1]
+        self.y_ref = SLM_SHAPE[0]
 
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -73,6 +75,11 @@ class MainWindow(QtWidgets.QMainWindow):
         msgBox.setWindowTitle(title)
         msgBox.exec()
 
+    def updateWarpPosition(self):
+        self.warp[0,-1] = 302 - self.ui.sbX.value()
+        self.warp[1,-1] = 308 - self.ui.sbY.value()
+
+
     def cbPositionIndexChanged(self):
         self.ui.sbPositionValue.setMaximum(self.camera.camera_shape[1 - self.ui.cbPosition.currentIndex()])
 
@@ -87,9 +94,8 @@ class MainWindow(QtWidgets.QMainWindow):
             x_c, y_c = centroid(camera_image/255.)
             x_i, y_i = centroid(image/255.)
 
-            scale = 1 if OVERWRITE else 2
-            h, w = scale*np.array(image.shape)
-            
+            h, w = np.array(image.shape)
+
             if np.any([h > SLM_SHAPE[0], w > SLM_SHAPE[1]]):
                 self.showDialog(QtWidgets.QMessageBox.Warning, 'Aviso', 'Tamanho da imagem deve ser menor que a região do SLM (%d x %d)' % SLM_SHAPE)
                 return
@@ -97,17 +103,17 @@ class MainWindow(QtWidgets.QMainWindow):
             y_max, x_max = SLM_SHAPE
 
             self.ui.sbX.setMaximum(x_max - w)
-            self.ui.sbX.setValue(int((x_c*SLM_SHAPE[1]/self.camera.camera_shape[1] - scale*x_i)))
+            self.ui.sbX.setValue(int((x_c*SLM_SHAPE[1]/self.camera.camera_shape[1] - x_i)))
             self.ui.sbY.setMaximum(y_max - h)
-            self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.camera_shape[0] - scale*y_i)))
+            self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.camera_shape[0] - y_i)))
 
             opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
-            phase = generate_pishift(image, opt_args = opt_args, overwrite = OVERWRITE, slm_shape = SLM_SHAPE, binary = BINARY)
+            phase = generate_pishift(image, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
             self.phase = phase
             self.camera.set_phase(phase)
             camera_image = self.camera.get_image()
     
-            self.loadFigureGraphicsView(phase, self.ui.gvPhase)
+            self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
             self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
             self.cbPositionIndexChanged()
 
@@ -130,7 +136,7 @@ class MainWindow(QtWidgets.QMainWindow):
             y = camera_image[self.ui.sbPositionValue.value() - 1, :]
         axes.set_xlim(1, len(y) + 1)
         x = np.arange(1, len(y) + 1)
-        axes.set_ylim(0, 1.5*np.max(camera_image))
+        axes.set_ylim(np.min(camera_image), np.max(camera_image))
         axes.set_xlabel('Posicao')
         axes.set_ylabel('Intensidade')
         axes.plot(x, y)
@@ -142,11 +148,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.gvCameraSideView.setScene(scene)
 
     def update(self, opt_args):
-        self.phase = generate_pishift(self.image_correction, opt_args = opt_args, overwrite = OVERWRITE, slm_shape = SLM_SHAPE, binary = BINARY)
+        self.phase = generate_pishift(self.image_correction, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
         self.camera.set_phase(self.phase)
         camera_image = self.camera.get_image()
 
-        self.loadFigureGraphicsView(self.phase, self.ui.gvPhase)
+        self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
         self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
         self.cbPositionIndexChanged()
         self.pbShowClicked()
@@ -160,8 +166,9 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
+        self.updateWarpPosition()
         aligned_image = align_image(self.image, camera_image, self.warp)
-        self.image_correction = self.image - np.where(aligned_image > self.image, aligned_image - self.image, 0)
+        self.image_correction = self.image - aligned_image
         
         opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None
         self.update(opt_args)
@@ -169,6 +176,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
         warp, match_res = get_warp(self.image, camera_image)
+        self.x_ref = self.ui.sbX.value()
+        self.y_ref = self.ui.sbY.value()
         self.warp = warp
         self.ui.lblConfidence.setText("Nível de confidência: %.2f%%" % (100*match_res))
 
