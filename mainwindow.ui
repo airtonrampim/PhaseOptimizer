@@ -292,7 +292,9 @@
  </widget>
  <tabstops>
   <tabstop>sbX</tabstop>
+  <tabstop>sbY</tabstop>
   <tabstop>pbUpdate</tabstop>
+  <tabstop>pbAlign</tabstop>
   <tabstop>pbOptimize</tabstop>
   <tabstop>cbPosition</tabstop>
   <tabstop>sbPositionValue</tabstop>

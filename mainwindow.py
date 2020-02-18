@@ -133,8 +133,10 @@ class Ui_MainWindow(object):
         self.cbPosition.setCurrentIndex(1)
         self.actQuit.triggered.connect(MainWindow.close)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-        MainWindow.setTabOrder(self.sbX, self.pbUpdate)
-        MainWindow.setTabOrder(self.pbUpdate, self.pbOptimize)
+        MainWindow.setTabOrder(self.sbX, self.sbY)
+        MainWindow.setTabOrder(self.sbY, self.pbUpdate)
+        MainWindow.setTabOrder(self.pbUpdate, self.pbAlign)
+        MainWindow.setTabOrder(self.pbAlign, self.pbOptimize)
         MainWindow.setTabOrder(self.pbOptimize, self.cbPosition)
         MainWindow.setTabOrder(self.cbPosition, self.sbPositionValue)
 
