@@ -19,7 +19,7 @@ SLM_SHAPE = (1024, 1280)
 BINARY = True
 
 class CameraThread(QtCore.QThread):
-    changePixmap = QtCore.pyqtSignal(QtGui.QImage)
+    changePixmap = QtCore.pyqtSignal(list)
 
     def __init__(self, shape):
         super().__init__()
@@ -28,6 +28,10 @@ class CameraThread(QtCore.QThread):
         
         self.image_width = 640
         self.image_height = 480
+        self.curve_width = 640
+        self.curve_height = 480
+        self.position_index = 0
+        self.position_value = 1
 
     def set_phase(self, phase):
         self._camera.set_phase(phase)
@@ -39,11 +43,13 @@ class CameraThread(QtCore.QThread):
         return self._camera.camera_shape
 
     def run(self):
+        x, y = None, None
+        gmin, gmax = np.inf, -np.inf
         while True:
             self._image = self._camera.get_image()
             h, w = self._image.shape
 
-            figure = Figure()#figsize=(w, h))
+            figure = Figure()
             canvas = FigureCanvas(figure)
             axes = figure.gca()
             axes.imshow(self._image, cmap='gray')
@@ -52,11 +58,37 @@ class CameraThread(QtCore.QThread):
             width, height = size.width(), size.height()
             convertToQtFormat = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
 
-            #h, w = self._image.shape
-            #convertToQtFormat = QtGui.QImage(bytes(self._image.data), w, h, QtGui.QImage.Format_Grayscale8)
+            p1 = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
 
-            p = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
-            self.changePixmap.emit(p)
+            
+            w = self.curve_width/matplotlib.rcParams["figure.dpi"]
+            h = self.curve_height/matplotlib.rcParams["figure.dpi"]
+
+            figure = Figure(figsize=(w, h))
+            canvas = FigureCanvas(figure)
+            axes = figure.gca()
+
+            if self.position_index == 0:
+                y = self._image[:, self.position_value - 1]
+            else:
+                y = self._image[self.position_value - 1, :]
+            axes.set_xlim(1, len(y) + 1)
+            x = np.arange(1, len(y) + 1)
+            ymin, ymax = np.min(self._image), np.max(self._image)
+            if ymin < gmin: gmin = ymin
+            if ymax > gmax: gmax = ymax
+            if gmax > gmin:
+                axes.set_ylim(gmin, gmax)
+            axes.set_xlabel('Posicao')
+            axes.set_ylabel('Intensidade')
+            axes.plot(x, y)
+
+            canvas.draw()
+            size = canvas.size()
+            width, height = size.width(), size.height()
+            p2 = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+
+            self.changePixmap.emit([p1, p2])
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -74,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.setupUi(self)
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
+        self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.pbShow.clicked.connect(self.pbShowClicked)
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
@@ -83,19 +116,26 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.changePixmap.connect(self.setImage)
         self.camera.image_height = self.ui.lblCamera.height()
         self.camera.image_width = self.ui.lblCamera.width()
+        self.camera.curve_height = self.ui.lblCameraSideView.height()
+        self.camera.curve_width = self.ui.lblCameraSideView.width()
         self.camera.start()
+        
+        self.cbPositionIndexChanged()
 
         self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
         self.pbShowClicked()
 
-    @QtCore.pyqtSlot(QtGui.QImage)
-    def setImage(self, image):
-        self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(image))
+    @QtCore.pyqtSlot(list)
+    def setImage(self, images):
+        self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(images[0]))
+        self.ui.lblCameraSideView.setPixmap(QtGui.QPixmap.fromImage(images[1]))
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
         self.camera.image_height = self.ui.lblCamera.height()
         self.camera.image_width = self.ui.lblCamera.width()
+        self.camera.curve_height = self.ui.lblCameraSideView.height()
+        self.camera.curve_width = self.ui.lblCameraSideView.width()
 
     def showImageFileDialog(self):
         options = QtWidgets.QFileDialog.Options()
@@ -130,9 +170,14 @@ class MainWindow(QtWidgets.QMainWindow):
         self.warp[0,-1] = 302 - self.ui.sbX.value()
         self.warp[1,-1] = 308 - self.ui.sbY.value()
 
-
     def cbPositionIndexChanged(self):
         self.ui.sbPositionValue.setMaximum(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()])
+        self.camera.position_index = self.ui.cbPosition.currentIndex()
+        self.camera.position_value = self.ui.sbPositionValue.value()
+
+    def sbPositionValueEditingFinished(self):
+        self.camera.position_index = self.ui.cbPosition.currentIndex()
+        self.camera.position_value = self.ui.sbPositionValue.value()
 
     def actLoadImageClicked(self):
         filename = self.showImageFileDialog()
