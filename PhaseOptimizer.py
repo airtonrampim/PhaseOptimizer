@@ -108,6 +108,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
+        self.ui.sbX.editingFinished.connect(self.pbUpdateClicked)
+        self.ui.sbY.editingFinished.connect(self.pbUpdateClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
