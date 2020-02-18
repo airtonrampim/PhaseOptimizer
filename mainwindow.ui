@@ -27,30 +27,10 @@
        <string>Câmera</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_4">
-       <item row="1" column="1">
-        <widget class="QPushButton" name="pbCapture">
-         <property name="text">
-          <string>Capturar &amp;imagem</string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="0">
-        <spacer name="horizontalSpacer_4">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
        <item row="0" column="0" colspan="2">
-        <widget class="QGraphicsView" name="gvCamera">
-         <property name="focusPolicy">
-          <enum>Qt::NoFocus</enum>
+        <widget class="QLabel" name="lblCamera">
+         <property name="text">
+          <string/>
          </property>
         </widget>
        </item>
@@ -321,12 +301,10 @@
   <tabstop>sbX</tabstop>
   <tabstop>pbUpdate</tabstop>
   <tabstop>pbOptimize</tabstop>
-  <tabstop>pbCapture</tabstop>
   <tabstop>cbPosition</tabstop>
   <tabstop>sbPositionValue</tabstop>
   <tabstop>pbShow</tabstop>
   <tabstop>gvCameraSideView</tabstop>
-  <tabstop>gvCamera</tabstop>
   <tabstop>gvPhase</tabstop>
  </tabstops>
  <resources/>

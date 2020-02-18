@@ -18,15 +18,44 @@ import mainwindow
 SLM_SHAPE = (1024, 1280)
 BINARY = True
 
+class CameraThread(QtCore.QThread):
+    changePixmap = QtCore.pyqtSignal(QtGui.QImage)
+
+    def __init__(self, shape):
+        super().__init__()
+        self.camera = Camera(shape)
+
+    def set_phase(self, phase):
+        self.camera.set_phase(phase)
+    
+    def get_image(self):
+        return self.camera.get_image()
+    
+    def get_camera_shape(self):
+        return self.camera.camera_shape
+
+    def run(self):
+        while True:
+            ret, image = 1, self.get_image()
+            if ret:
+                h, w = image.shape
+                bytesPerLine = w
+                convertToQtFormat = QtGui.QImage(image.data, w, h, bytesPerLine, QtGui.QImage.Format_Grayscale8)
+                p = convertToQtFormat.scaled(520, 320, QtCore.Qt.KeepAspectRatio)
+                self.changePixmap.emit(p)
+
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         
         self.phase = None
-        self.camera = Camera(SLM_SHAPE)
         self.image = None
         self.image_correction = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
+
+        self.camera = CameraThread(SLM_SHAPE)
+        self.camera.changePixmap.connect(self.setImage)
+        self.camera.start()
         
         self.x_ref = SLM_SHAPE[1]
         self.y_ref = SLM_SHAPE[0]
@@ -37,15 +66,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.pbShow.clicked.connect(self.pbShowClicked)
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
-        self.ui.pbCapture.clicked.connect(self.pbCaptureClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
-        self.pbCaptureClicked()
-        self.cbPositionIndexChanged()
+        #self.pbCaptureClicked()
+        #self.cbPositionIndexChanged()
 
-        self.ui.sbPositionValue.setValue(self.camera.camera_shape[1 - self.ui.cbPosition.currentIndex()]//2)
+        self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
         self.pbShowClicked()
+
+    @QtCore.pyqtSlot(QtGui.QImage)
+    def setImage(self, image):
+        self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def showImageFileDialog(self):
         options = QtWidgets.QFileDialog.Options()
@@ -81,7 +113,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
     def cbPositionIndexChanged(self):
-        self.ui.sbPositionValue.setMaximum(self.camera.camera_shape[1 - self.ui.cbPosition.currentIndex()])
+        self.ui.sbPositionValue.setMaximum(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()])
 
     def actLoadImageClicked(self):
         filename = self.showImageFileDialog()
@@ -103,9 +135,9 @@ class MainWindow(QtWidgets.QMainWindow):
             y_max, x_max = SLM_SHAPE
 
             self.ui.sbX.setMaximum(x_max - w)
-            self.ui.sbX.setValue(int((x_c*SLM_SHAPE[1]/self.camera.camera_shape[1] - x_i)))
+            self.ui.sbX.setValue(int((x_c*SLM_SHAPE[1]/self.camera.get_camera_shape()[1] - x_i)))
             self.ui.sbY.setMaximum(y_max - h)
-            self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.camera_shape[0] - y_i)))
+            self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.get_camera_shape()[0] - y_i)))
 
             opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
             phase = generate_pishift(image, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
@@ -114,7 +146,7 @@ class MainWindow(QtWidgets.QMainWindow):
             camera_image = self.camera.get_image()
     
             self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
-            self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
+            #self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
             self.cbPositionIndexChanged()
 
             self.pbShowClicked()
@@ -153,7 +185,7 @@ class MainWindow(QtWidgets.QMainWindow):
         camera_image = self.camera.get_image()
 
         self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
-        self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
+        #self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
         self.cbPositionIndexChanged()
         self.pbShowClicked()
 
@@ -162,7 +194,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update(opt_args)
 
     def pbCaptureClicked(self):
-        self.loadFigureGraphicsView(self.camera.get_image(), self.ui.gvCamera)
+        #self.loadFigureGraphicsView(self.camera.get_image(), self.ui.gvCamera)
+        pass
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
