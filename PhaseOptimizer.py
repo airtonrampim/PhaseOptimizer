@@ -42,7 +42,19 @@ class CameraThread(QtCore.QThread):
         while True:
             self._image = self._camera.get_image()
             h, w = self._image.shape
-            convertToQtFormat = QtGui.QImage(bytes(self._image.data), w, h, QtGui.QImage.Format_Grayscale8)
+
+            figure = Figure()#figsize=(w, h))
+            canvas = FigureCanvas(figure)
+            axes = figure.gca()
+            axes.imshow(self._image, cmap='gray')
+            canvas.draw()
+            size = canvas.size()
+            width, height = size.width(), size.height()
+            convertToQtFormat = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+
+            #h, w = self._image.shape
+            #convertToQtFormat = QtGui.QImage(bytes(self._image.data), w, h, QtGui.QImage.Format_Grayscale8)
+
             p = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
             self.changePixmap.emit(p)
 
