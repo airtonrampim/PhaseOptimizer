@@ -23,26 +23,28 @@ class CameraThread(QtCore.QThread):
 
     def __init__(self, shape):
         super().__init__()
-        self.camera = Camera(shape)
+        self._camera = Camera(shape)
+        self._image = np.zeros(shape)
+        
+        self.image_width = 640
+        self.image_height = 480
 
     def set_phase(self, phase):
-        self.camera.set_phase(phase)
+        self._camera.set_phase(phase)
     
     def get_image(self):
-        return self.camera.get_image()
+        return self._image
     
     def get_camera_shape(self):
-        return self.camera.camera_shape
+        return self._camera.camera_shape
 
     def run(self):
         while True:
-            ret, image = 1, self.get_image()
-            if ret:
-                h, w = image.shape
-                bytesPerLine = w
-                convertToQtFormat = QtGui.QImage(image.data, w, h, bytesPerLine, QtGui.QImage.Format_Grayscale8)
-                p = convertToQtFormat.scaled(520, 320, QtCore.Qt.KeepAspectRatio)
-                self.changePixmap.emit(p)
+            self._image = self._camera.get_image()
+            h, w = self._image.shape
+            convertToQtFormat = QtGui.QImage(bytes(self._image.data), w, h, QtGui.QImage.Format_Grayscale8)
+            p = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
+            self.changePixmap.emit(p)
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -52,10 +54,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.image = None
         self.image_correction = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
-
-        self.camera = CameraThread(SLM_SHAPE)
-        self.camera.changePixmap.connect(self.setImage)
-        self.camera.start()
         
         self.x_ref = SLM_SHAPE[1]
         self.y_ref = SLM_SHAPE[0]
@@ -69,8 +67,11 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
-        #self.pbCaptureClicked()
-        #self.cbPositionIndexChanged()
+        self.camera = CameraThread(SLM_SHAPE)
+        self.camera.changePixmap.connect(self.setImage)
+        self.camera.image_height = self.ui.lblCamera.height()
+        self.camera.image_width = self.ui.lblCamera.width()
+        self.camera.start()
 
         self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
         self.pbShowClicked()
@@ -79,6 +80,11 @@ class MainWindow(QtWidgets.QMainWindow):
     def setImage(self, image):
         self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(image))
 
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        self.camera.image_height = self.ui.lblCamera.height()
+        self.camera.image_width = self.ui.lblCamera.width()
+
     def showImageFileDialog(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
@@ -86,20 +92,21 @@ class MainWindow(QtWidgets.QMainWindow):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Abrir imagem", "", "Imagem (*.bmp *.dib *.jpeg *.jpg *.jpe *.jp2 *.png *.webp *.pbm *.pgm *.ppm *.pxm *.pnm *.pfm *.sr *.ras *.tiff *.tif *.exr *.hdr *.pic);;Todos os arquivos (*)", options = options)        
         return filename
 
-    def loadFigureGraphicsView(self, array, graphicsView):
-        w = graphicsView.geometry().width()/matplotlib.rcParams["figure.dpi"]
-        h = graphicsView.geometry().height()/matplotlib.rcParams["figure.dpi"]
+    def loadFigure(self, array, label):
+        w = label.width()/matplotlib.rcParams["figure.dpi"]
+        h = label.height()/matplotlib.rcParams["figure.dpi"]
 
         figure = Figure(figsize=(w, h))
+        canvas = FigureCanvas(figure)
         axes = figure.gca()
         axes.imshow(array, cmap='gray')
+        canvas.draw()
+        size = canvas.size()
+        width, height = size.width(), size.height()
+        image = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+        label.setPixmap(QtGui.QPixmap.fromImage(image))
 
-        canvas = FigureCanvas(figure)
-        
-        scene = QtWidgets.QGraphicsScene(graphicsView)
-        scene.addWidget(canvas)
-        graphicsView.setScene(scene)
-    
+
     def showDialog(self, icon, title, message):
         msgBox = QtWidgets.QMessageBox()
         msgBox.setIcon(icon)
@@ -145,8 +152,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.camera.set_phase(phase)
             camera_image = self.camera.get_image()
     
-            self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
-            #self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
+            self.loadFigure(self.phase, self.ui.lblPhase)
             self.cbPositionIndexChanged()
 
             self.pbShowClicked()
@@ -155,11 +161,13 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.gbCameraSideView.setEnabled(True)
     
     def pbShowClicked(self):
-        w = self.ui.gvCameraSideView.geometry().width()/matplotlib.rcParams["figure.dpi"]
-        h = self.ui.gvCameraSideView.geometry().height()/matplotlib.rcParams["figure.dpi"]
+        w = self.ui.lblCameraSideView.width()/matplotlib.rcParams["figure.dpi"]
+        h = self.ui.lblCameraSideView.height()/matplotlib.rcParams["figure.dpi"]
 
         figure = Figure(figsize=(w, h))
+        canvas = FigureCanvas(figure)
         axes = figure.gca()
+        
         camera_image = self.camera.get_image()
         x, y = None, None
         if self.ui.cbPosition.currentIndex() == 0:
@@ -168,34 +176,31 @@ class MainWindow(QtWidgets.QMainWindow):
             y = camera_image[self.ui.sbPositionValue.value() - 1, :]
         axes.set_xlim(1, len(y) + 1)
         x = np.arange(1, len(y) + 1)
-        axes.set_ylim(np.min(camera_image), np.max(camera_image))
+        ymin, ymax = np.min(camera_image), np.max(camera_image)
+        if ymax > ymin:
+            axes.set_ylim(ymin, ymax)
         axes.set_xlabel('Posicao')
         axes.set_ylabel('Intensidade')
         axes.plot(x, y)
-
-        canvas = FigureCanvas(figure)
         
-        scene = QtWidgets.QGraphicsScene(self.ui.gvCameraSideView)
-        scene.addWidget(canvas)
-        self.ui.gvCameraSideView.setScene(scene)
+        canvas.draw()
+        size = canvas.size()
+        width, height = size.width(), size.height()
+        image = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+        self.ui.lblCameraSideView.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def update(self, opt_args):
         self.phase = generate_pishift(self.image_correction, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
         self.camera.set_phase(self.phase)
         camera_image = self.camera.get_image()
 
-        self.loadFigureGraphicsView(self.image_correction, self.ui.gvPhase)
-        #self.loadFigureGraphicsView(camera_image, self.ui.gvCamera)
+        self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
         self.pbShowClicked()
 
     def pbUpdateClicked(self):
         opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
         self.update(opt_args)
-
-    def pbCaptureClicked(self):
-        #self.loadFigureGraphicsView(self.camera.get_image(), self.ui.gvCamera)
-        pass
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
