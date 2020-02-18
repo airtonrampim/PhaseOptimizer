@@ -107,7 +107,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
-        self.ui.pbShow.clicked.connect(self.pbShowClicked)
         self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
@@ -123,7 +122,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cbPositionIndexChanged()
 
         self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
-        self.pbShowClicked()
 
     @QtCore.pyqtSlot(list)
     def setImage(self, images):
@@ -212,39 +210,8 @@ class MainWindow(QtWidgets.QMainWindow):
             self.loadFigure(self.phase, self.ui.lblPhase)
             self.cbPositionIndexChanged()
 
-            self.pbShowClicked()
-
             self.ui.gbPhase.setEnabled(True)
             self.ui.gbCameraSideView.setEnabled(True)
-    
-    def pbShowClicked(self):
-        w = self.ui.lblCameraSideView.width()/matplotlib.rcParams["figure.dpi"]
-        h = self.ui.lblCameraSideView.height()/matplotlib.rcParams["figure.dpi"]
-
-        figure = Figure(figsize=(w, h))
-        canvas = FigureCanvas(figure)
-        axes = figure.gca()
-        
-        camera_image = self.camera.get_image()
-        x, y = None, None
-        if self.ui.cbPosition.currentIndex() == 0:
-            y = camera_image[:, self.ui.sbPositionValue.value() - 1]
-        else:
-            y = camera_image[self.ui.sbPositionValue.value() - 1, :]
-        axes.set_xlim(1, len(y) + 1)
-        x = np.arange(1, len(y) + 1)
-        ymin, ymax = np.min(camera_image), np.max(camera_image)
-        if ymax > ymin:
-            axes.set_ylim(ymin, ymax)
-        axes.set_xlabel('Posicao')
-        axes.set_ylabel('Intensidade')
-        axes.plot(x, y)
-        
-        canvas.draw()
-        size = canvas.size()
-        width, height = size.width(), size.height()
-        image = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
-        self.ui.lblCameraSideView.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def update(self, opt_args):
         self.phase = generate_pishift(self.image_correction, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
@@ -253,7 +220,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
-        self.pbShowClicked()
 
     def pbUpdateClicked(self):
         opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)

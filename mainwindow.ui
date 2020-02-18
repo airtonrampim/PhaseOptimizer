@@ -59,40 +59,6 @@
          </property>
         </widget>
        </item>
-       <item row="0" column="5">
-        <widget class="QPushButton" name="pbShow">
-         <property name="text">
-          <string>&amp;Visualizar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="0">
-        <widget class="QLabel" name="lblPosition">
-         <property name="text">
-          <string>Posição</string>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="4">
-        <spacer name="horizontalSpacer_3">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="3">
-        <widget class="QSpinBox" name="sbPositionValue">
-         <property name="minimum">
-          <number>1</number>
-         </property>
-        </widget>
-       </item>
        <item row="0" column="1">
         <widget class="QComboBox" name="cbPosition">
          <property name="currentIndex">
@@ -116,6 +82,33 @@
           <string/>
          </property>
         </widget>
+       </item>
+       <item row="0" column="0">
+        <widget class="QLabel" name="lblPosition">
+         <property name="text">
+          <string>Posição</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="sbPositionValue">
+         <property name="minimum">
+          <number>1</number>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="4">
+        <spacer name="horizontalSpacer_3">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
        </item>
       </layout>
      </widget>
@@ -303,7 +296,6 @@
   <tabstop>pbOptimize</tabstop>
   <tabstop>cbPosition</tabstop>
   <tabstop>sbPositionValue</tabstop>
-  <tabstop>pbShow</tabstop>
  </tabstops>
  <resources/>
  <connections>
