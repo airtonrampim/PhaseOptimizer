@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+#https://stackoverflow.com/a/60064072/9257438
 def get_corners(image):
     # blur image
     image_inv = 255 - image

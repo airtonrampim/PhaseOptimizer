@@ -16,7 +16,6 @@ from PyQt5 import QtTest
 import mainwindow
 
 SLM_SHAPE = (1024, 1280)
-BINARY = True
 
 class CameraThread(QtCore.QThread):
     changePixmap = QtCore.pyqtSignal(list)
@@ -26,6 +25,7 @@ class CameraThread(QtCore.QThread):
         self._camera = Camera(shape)
         self._image = np.zeros(shape)
         
+        self.facecolor = '#FFFFFF'
         self.image_width = 640
         self.image_height = 480
         self.curve_width = 640
@@ -50,6 +50,7 @@ class CameraThread(QtCore.QThread):
             h, w = self._image.shape
 
             figure = Figure()
+            figure.patch.set_facecolor(self.facecolor)
             canvas = FigureCanvas(figure)
             axes = figure.gca()
             axes.imshow(self._image, cmap='gray')
@@ -65,6 +66,7 @@ class CameraThread(QtCore.QThread):
             h = self.curve_height/matplotlib.rcParams["figure.dpi"]
 
             figure = Figure(figsize=(w, h))
+            figure.patch.set_facecolor(self.facecolor)
             canvas = FigureCanvas(figure)
             axes = figure.gca()
 
@@ -107,14 +109,17 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
-        self.ui.pbUpdate.clicked.connect(self.pbUpdateClicked)
-        self.ui.sbX.editingFinished.connect(self.pbUpdateClicked)
-        self.ui.sbY.editingFinished.connect(self.pbUpdateClicked)
+        self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.sbY.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.sbDistanceGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.sbLengthGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.cbBinary.clicked.connect(self.sbCoordsGratingEditingFinished)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
         self.camera = CameraThread(SLM_SHAPE)
         self.camera.changePixmap.connect(self.setImage)
+        self.camera.facecolor = self.palette().window().color().name()
         self.camera.image_height = self.ui.lblCamera.height()
         self.camera.image_width = self.ui.lblCamera.width()
         self.camera.curve_height = self.ui.lblCameraSideView.height()
@@ -124,6 +129,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.cbPositionIndexChanged()
 
         self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
+        self.ui.sbDistanceGrating.setMaximum(SLM_SHAPE[0])
+        self.ui.sbLengthGrating.setMaximum(SLM_SHAPE[0])
 
     @QtCore.pyqtSlot(list)
     def setImage(self, images):
@@ -151,6 +158,9 @@ class MainWindow(QtWidgets.QMainWindow):
         figure = Figure(figsize=(w, h))
         canvas = FigureCanvas(figure)
         axes = figure.gca()
+
+        facecolor = self.palette().window().color()
+        figure.patch.set_facecolor(facecolor.name())
         axes.imshow(array, cmap='gray')
         canvas.draw()
         size = canvas.size()
@@ -203,8 +213,9 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.sbY.setMaximum(y_max - h)
             self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.get_camera_shape()[0] - y_i)))
 
-            opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
-            phase = generate_pishift(image, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
+            coords = self.ui.sbX.value(), self.ui.sbY.value()
+            grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+            phase = generate_pishift(image, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)
             self.phase = phase
             self.camera.set_phase(phase)
             camera_image = self.camera.get_image()
@@ -215,17 +226,18 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.gbPhase.setEnabled(True)
             self.ui.gbCameraSideView.setEnabled(True)
 
-    def update(self, opt_args):
-        self.phase = generate_pishift(self.image_correction, opt_args = opt_args, slm_shape = SLM_SHAPE, binary = BINARY)
+    def update(self, coords, grating_params):
+        self.phase = generate_pishift(self.image_correction, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)
         self.camera.set_phase(self.phase)
         camera_image = self.camera.get_image()
 
         self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
 
-    def pbUpdateClicked(self):
-        opt_args = (self.ui.sbX.value(), self.ui.sbY.value(), None, None)
-        self.update(opt_args)
+    def sbCoordsGratingEditingFinished(self):
+        coords = self.ui.sbX.value(), self.ui.sbY.value()
+        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        self.update(coords, grating_params)
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
@@ -233,8 +245,9 @@ class MainWindow(QtWidgets.QMainWindow):
         aligned_image = align_image(self.image, camera_image, self.warp)
         self.image_correction = self.image - aligned_image
         
-        opt_args = self.ui.sbX.value(), self.ui.sbY.value(), None, None
-        self.update(opt_args)
+        coords = self.ui.sbX.value(), self.ui.sbY.value()
+        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        self.update(coords, grating_params)
     
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
