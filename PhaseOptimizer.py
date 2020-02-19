@@ -197,8 +197,11 @@ class MainWindow(QtWidgets.QMainWindow):
             self.image_correction = image
 
             camera_image = self.camera.get_image()
-            x_c, y_c = centroid(camera_image/255.)
-            x_i, y_i = centroid(image/255.)
+
+            if np.abs(camera_image).sum() > 0: x_c, y_c = centroid(camera_image/255.)
+            else: x_c, y_c = camera_image.shape[1]/2, camera_image.shape[0]/2
+            if np.abs(image).sum() > 0: x_i, y_i = centroid(image/255.)
+            else: x_i, y_i = image.shape[1]/2, image.shape[0]/2
 
             h, w = np.array(image.shape)
 
