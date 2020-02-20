@@ -28,15 +28,17 @@ def generate_pishift(image, coords, shape, binary, grating_params = (1, 1)):
 
     g_l, g_a = grating_params
 
-    imagen = (image - np.min(image))/np.ptp(image)
-    phase = None
+    diff = np.ptp(image)
+    imagen = image.copy()
+    if (np.abs(diff) > 0):
+        imagen = (image - np.min(image))/diff
 
+    phase = np.zeros_like(image)
     if binary:
-        phase = np.zeros_like(image)
         phase[np.nonzero(image)] = 128*imagen[np.nonzero(image)]
     else:
-        phase = 128*np.sqrt(imagen)/np.pi
-    
+        phase[np.nonzero(image)] = 128*np.sqrt(imagen[np.nonzero(image)])/np.pi
+
     h_p, w_p = phase.shape
     phase_slm = np.zeros(shape)
     phase_slm[y0:(y0 + h_p), x0:(x0 + w_p)] = phase

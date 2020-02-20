@@ -91,6 +91,9 @@ class CameraThread(QtCore.QThread):
             p2 = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
 
             self.changePixmap.emit([p1, p2])
+    
+    def close(self):
+        self._camera.close()
 
 class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
@@ -111,8 +114,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
         self.ui.sbY.editingFinished.connect(self.sbCoordsGratingEditingFinished)
-        self.ui.sbDistanceGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
-        self.ui.sbLengthGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.sbDistanceGrating.editingFinished.connect(self.pbOptimizeClicked)#(self.sbCoordsGratingEditingFinished)
+        self.ui.sbLengthGrating.editingFinished.connect(self.pbOptimizeClicked)#(self.sbCoordsGratingEditingFinished)
         self.ui.cbBinary.clicked.connect(self.sbCoordsGratingEditingFinished)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
@@ -136,6 +139,10 @@ class MainWindow(QtWidgets.QMainWindow):
     def setImage(self, images):
         self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(images[0]))
         self.ui.lblCameraSideView.setPixmap(QtGui.QPixmap.fromImage(images[1]))
+
+    def closeEvent(self, event):
+        super().closeEvent(event)
+        self.camera.close()
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
@@ -177,8 +184,8 @@ class MainWindow(QtWidgets.QMainWindow):
         msgBox.exec()
 
     def updateWarpPosition(self):
-        self.warp[0,-1] = 302 - self.ui.sbX.value()
-        self.warp[1,-1] = 308 - self.ui.sbY.value()
+        self.warp[0,-1] = 290 - self.ui.sbX.value() #302
+        self.warp[1,-1] = 296 - self.ui.sbY.value() #308
 
     def cbPositionIndexChanged(self):
         self.ui.sbPositionValue.setMaximum(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()])
@@ -217,7 +224,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.get_camera_shape()[0] - y_i)))
 
             coords = self.ui.sbX.value(), self.ui.sbY.value()
-            grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+            grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
             phase = generate_pishift(image, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)
             self.phase = phase
             self.camera.set_phase(phase)
@@ -239,17 +246,20 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def sbCoordsGratingEditingFinished(self):
         coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
         self.update(coords, grating_params)
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
         self.updateWarpPosition()
         aligned_image = align_image(self.image, camera_image, self.warp)
-        self.image_correction = self.image - aligned_image
+        
+        #ref_value = np.min(aligned_image[75:(75+125), 140:(140+90)])
+        
+        self.image_correction = 1E-2*(self.ui.sbDistanceGrating.value()*self.image - self.ui.sbLengthGrating.value()*aligned_image)
         
         coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
         self.update(coords, grating_params)
     
     def pbAlignClicked(self):

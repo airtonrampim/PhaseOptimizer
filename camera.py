@@ -1,4 +1,3 @@
-import cv2
 import numpy as np
 import PyCapture2
 import slmpy
@@ -10,7 +9,7 @@ class Camera():
         uid = bus.getCameraFromIndex(0)
         self.camera.connect(uid)
         self.camera.startCapture()
-        self.slm = slmpy.SLMdisplay()
+        self.slm = slmpy.SLMdisplay(shape)
         image = self.camera.retrieveBuffer()
         self.camera_shape = (image.getRows(), image.getCols())
 
@@ -22,3 +21,6 @@ class Camera():
         self.camera_shape = (image.getRows(), image.getCols())
         image_array = np.array(image.getData(), dtype='uint8').reshape(self.camera_shape)
         return image_array
+
+    def close(self):
+        self.slm.close()
