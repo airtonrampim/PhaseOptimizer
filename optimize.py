@@ -1,6 +1,11 @@
 import cv2
 import numpy as np
 
+def find_cutoff(image, max_value = 256):
+    h = cv2.calcHist([image], [0], None, [max_value], [0,max_value]).flatten()
+    x = np.arange(1, len(h) + 1)
+    return np.sum(x*h)/np.sum(h)
+
 #https://stackoverflow.com/a/60064072/9257438
 def get_corners(image):
     # blur image

@@ -16,6 +16,10 @@
   <property name="windowTitle">
    <string>Otimizar padrão de fase</string>
   </property>
+  <property name="windowIcon">
+   <iconset>
+    <normaloff>icon.xpm</normaloff>icon.xpm</iconset>
+  </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QGridLayout" name="gridLayout">
     <item row="1" column="1">

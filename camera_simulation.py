@@ -30,4 +30,7 @@ class Camera():
     def get_image(self):
         image = np.abs(self.field)[::-1, ::-1]
         return (235*(image - np.min(image))/np.ptp(image) + 20).astype(np.uint8)
+    
+    def close(self):
+        self.field = self.beam
 
