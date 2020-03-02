@@ -110,6 +110,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
+        self.ui.actSavePhase.triggered.connect(self.actSavePhaseClicked)
+        self.ui.actSavePhase.setEnabled(False)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
@@ -151,11 +153,18 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.curve_height = self.ui.lblCameraSideView.height()
         self.camera.curve_width = self.ui.lblCameraSideView.width()
 
-    def showImageFileDialog(self):
+    def showSaveImageDialog(self):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         options |= QtWidgets.QFileDialog.HideNameFilterDetails
-        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Abrir imagem", "", "Imagem (*.bmp *.dib *.jpeg *.jpg *.jpe *.jp2 *.png *.webp *.pbm *.pgm *.ppm *.pxm *.pnm *.pfm *.sr *.ras *.tiff *.tif *.exr *.hdr *.pic);;Todos os arquivos (*)", options = options)        
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption="Abrir imagem", filter="Imagem (*)", options = options)
+        return filename
+
+    def showOpenImageDialog(self):
+        options = QtWidgets.QFileDialog.Options()
+        options |= QtWidgets.QFileDialog.DontUseNativeDialog
+        options |= QtWidgets.QFileDialog.HideNameFilterDetails
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, caption="Abrir imagem", filter="Imagem (*.bmp *.dib *.jpeg *.jpg *.jpe *.jp2 *.png *.webp *.pbm *.pgm *.ppm *.pxm *.pnm *.pfm *.sr *.ras *.tiff *.tif *.exr *.hdr *.pic);;Todos os arquivos (*)", options = options)
         return filename
 
     def loadFigure(self, array, label):
@@ -174,7 +183,6 @@ class MainWindow(QtWidgets.QMainWindow):
         width, height = size.width(), size.height()
         image = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
         label.setPixmap(QtGui.QPixmap.fromImage(image))
-
 
     def showDialog(self, icon, title, message):
         msgBox = QtWidgets.QMessageBox()
@@ -196,8 +204,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.position_index = self.ui.cbPosition.currentIndex()
         self.camera.position_value = self.ui.sbPositionValue.value()
 
+    def actSavePhaseClicked(self):
+        filename = self.showSaveImageDialog()
+        if filename:
+            cv2.imwrite(filename, self.phase)
+
     def actLoadImageClicked(self):
-        filename = self.showImageFileDialog()
+        filename = self.showOpenImageDialog()
         if filename:
             image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
             self.image = image
@@ -235,6 +248,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.ui.gbPhase.setEnabled(True)
             self.ui.gbCameraSideView.setEnabled(True)
+            self.ui.actSavePhase.setEnabled(True)
 
     def update(self, coords, grating_params):
         self.phase = generate_pishift(self.image_correction, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)

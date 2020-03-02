@@ -332,6 +332,7 @@
      <string>&amp;Arquivo</string>
     </property>
     <addaction name="actLoadImage"/>
+    <addaction name="actSavePhase"/>
     <addaction name="separator"/>
     <addaction name="actQuit"/>
    </widget>
@@ -358,6 +359,11 @@
   <action name="actAbout">
    <property name="text">
     <string>Sobre</string>
+   </property>
+  </action>
+  <action name="actSavePhase">
+   <property name="text">
+    <string>Salvar &amp;fase</string>
    </property>
   </action>
  </widget>
