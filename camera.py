@@ -3,13 +3,13 @@ import PyCapture2
 import slmpy
 
 class Camera():
-    def __init__(self, shape, icon = None):
+    def __init__(self, shape):
         bus = PyCapture2.BusManager()
         self.camera = PyCapture2.Camera()
         uid = bus.getCameraFromIndex(0)
         self.camera.connect(uid)
         self.camera.startCapture()
-        self.slm = slmpy.SLMdisplay(shape, icon)
+        self.slm = slmpy.SLMdisplay(shape)
         image = self.camera.retrieveBuffer()
         self.camera_shape = (image.getRows(), image.getCols())
 

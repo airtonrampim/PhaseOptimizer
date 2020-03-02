@@ -10,12 +10,11 @@ def generate_beam(shape, wl):
     return np.exp(-((I-i0)**2.0 + (J-j0)**2.0)/(wl**2.0))
 
 class Camera():
-    def __init__(self, shape, icon = None, monitor = 1):
+    def __init__(self, shape, monitor = 1):
         self.beam = generate_beam(shape, 350)
         self.field = self.beam
         self.camera_shape = shape
-        
-        self.icon = icon
+
         self.monitor = monitor
 
     def set_phase(self, phase):

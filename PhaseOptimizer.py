@@ -20,9 +20,9 @@ SLM_SHAPE = (1024, 1280)
 class CameraThread(QtCore.QThread):
     changePixmap = QtCore.pyqtSignal(list)
 
-    def __init__(self, shape, icon = None):
+    def __init__(self, shape):
         super().__init__()
-        self._camera = Camera(shape, icon)
+        self._camera = Camera(shape)
         self._image = np.zeros(shape)
         
         self.facecolor = '#FFFFFF'
@@ -120,7 +120,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
-        self.camera = CameraThread(SLM_SHAPE, self.windowIcon())
+        self.camera = CameraThread(SLM_SHAPE)
         self.camera.changePixmap.connect(self.setImage)
         self.camera.facecolor = self.palette().window().color().name()
         self.camera.image_height = self.ui.lblCamera.height()
