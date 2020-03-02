@@ -6,8 +6,10 @@ from PyQt5 import QtCore
 from PyQt5 import QtGui
 
 class SLMdisplay(QtWidgets.QFrame):
-    def __init__(self, image_shape, monitor = 1):
+    def __init__(self, image_shape, icon = None, monitor = 1):
         super().__init__()
+        if icon is not None:
+            self.setWindowIcon(icon)
         self.image_shape = image_shape
         self._label = QtWidgets.QLabel(self)
         self._label.setText("")
