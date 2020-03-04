@@ -33,6 +33,9 @@
       <layout class="QGridLayout" name="gridLayout_4">
        <item row="0" column="0" colspan="2">
         <widget class="QLabel" name="lblCamera">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ActionsContextMenu</enum>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -85,6 +88,9 @@
        </item>
        <item row="1" column="0" colspan="6">
         <widget class="QLabel" name="lblCameraSideView">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ActionsContextMenu</enum>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -158,6 +164,9 @@
        </item>
        <item row="0" column="1" colspan="6">
         <widget class="QLabel" name="lblPhase">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ActionsContextMenu</enum>
+         </property>
          <property name="text">
           <string/>
          </property>
@@ -332,7 +341,6 @@
      <string>&amp;Arquivo</string>
     </property>
     <addaction name="actLoadImage"/>
-    <addaction name="actSavePhase"/>
     <addaction name="separator"/>
     <addaction name="actQuit"/>
    </widget>
@@ -361,9 +369,22 @@
     <string>Sobre</string>
    </property>
   </action>
+  <action name="actSaveImage">
+   <property name="text">
+    <string>Salvar imagem</string>
+   </property>
+   <property name="toolTip">
+    <string>Salvar imagem</string>
+   </property>
+  </action>
   <action name="actSavePhase">
    <property name="text">
-    <string>Salvar &amp;fase</string>
+    <string>Salvar fase</string>
+   </property>
+  </action>
+  <action name="actSaveGraphic">
+   <property name="text">
+    <string>Salvar gráfico</string>
    </property>
   </action>
  </widget>

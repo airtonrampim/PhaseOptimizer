@@ -11,7 +11,8 @@ def generate_beam(shape, wl):
 
 class Camera():
     def __init__(self, shape, monitor = 1):
-        self.beam = generate_beam(shape, 350)
+        wl = 350
+        self.beam = generate_beam(shape, wl)*np.random.normal(loc=1, scale=5E-2, size=shape)
         self.field = self.beam
         self.camera_shape = shape
 

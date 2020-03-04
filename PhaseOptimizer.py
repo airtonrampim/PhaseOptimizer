@@ -24,6 +24,7 @@ class CameraThread(QtCore.QThread):
         super().__init__()
         self._camera = Camera(shape)
         self._image = np.zeros(shape)
+        self._graphic_figure = None
         
         self.facecolor = '#FFFFFF'
         self.image_width = 640
@@ -41,6 +42,9 @@ class CameraThread(QtCore.QThread):
     
     def get_camera_shape(self):
         return self._camera.camera_shape
+    
+    def get_graphic_figure(self):
+        return self._graphic_figure
 
     def run(self):
         x, y = None, None
@@ -65,10 +69,10 @@ class CameraThread(QtCore.QThread):
             w = self.curve_width/matplotlib.rcParams["figure.dpi"]
             h = self.curve_height/matplotlib.rcParams["figure.dpi"]
 
-            figure = Figure(figsize=(w, h))
-            figure.patch.set_facecolor(self.facecolor)
-            canvas = FigureCanvas(figure)
-            axes = figure.gca()
+            self._graphic_figure = Figure(figsize=(w, h))
+            self._graphic_figure.patch.set_facecolor(self.facecolor)
+            canvas = FigureCanvas(self._graphic_figure)
+            axes = self._graphic_figure.gca()
 
             if self.position_index == 0:
                 y = self._image[:, self.position_value - 1]
@@ -109,9 +113,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
+        self.ui.lblPhase.addAction(self.ui.actSavePhase)
+        self.ui.lblCamera.addAction(self.ui.actSaveImage)
+        self.ui.lblCameraSideView.addAction(self.ui.actSaveGraphic)
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.actSavePhase.triggered.connect(self.actSavePhaseClicked)
-        self.ui.actSavePhase.setEnabled(False)
+        self.ui.actSaveImage.triggered.connect(self.actSaveImageClicked)
+        self.ui.actSaveGraphic.triggered.connect(self.actSaveGraphicClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
@@ -185,7 +193,7 @@ class MainWindow(QtWidgets.QMainWindow):
         label.setPixmap(QtGui.QPixmap.fromImage(image))
 
     def showDialog(self, icon, title, message):
-        msgBox = QtWidgets.QMessageBox()
+        msgBox = QtWidgets.QMessageBox(self)
         msgBox.setIcon(icon)
         msgBox.setText(message)
         msgBox.setWindowTitle(title)
@@ -208,6 +216,18 @@ class MainWindow(QtWidgets.QMainWindow):
         filename = self.showSaveImageDialog()
         if filename:
             cv2.imwrite(filename, self.phase)
+    
+    def actSaveImageClicked(self):
+        camera_image = self.camera.get_image()
+        filename = self.showSaveImageDialog()
+        if filename:
+            cv2.imwrite(filename, camera_image)
+    
+    def actSaveGraphicClicked(self):
+        figure = self.camera.get_graphic_figure()
+        filename = self.showSaveImageDialog()
+        if filename:
+            figure.savefig(filename)
 
     def actLoadImageClicked(self):
         filename = self.showOpenImageDialog()
@@ -245,10 +265,8 @@ class MainWindow(QtWidgets.QMainWindow):
     
             self.loadFigure(self.phase, self.ui.lblPhase)
             self.cbPositionIndexChanged()
-
+            
             self.ui.gbPhase.setEnabled(True)
-            self.ui.gbCameraSideView.setEnabled(True)
-            self.ui.actSavePhase.setEnabled(True)
 
     def update(self, coords, grating_params):
         self.phase = generate_pishift(self.image_correction, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)
