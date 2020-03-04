@@ -14,6 +14,7 @@ from PyQt5 import QtGui
 from PyQt5 import QtCore
 from PyQt5 import QtTest
 import mainwindow
+import AboutWindow
 
 SLM_SHAPE = (1024, 1280)
 
@@ -103,6 +104,8 @@ class MainWindow(QtWidgets.QMainWindow):
     def __init__(self):
         super(MainWindow, self).__init__()
         
+        self.about = AboutWindow.AboutWindow(self)
+        
         self.phase = None
         self.image = None
         self.image_correction = None
@@ -120,6 +123,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actSavePhase.triggered.connect(self.actSavePhaseClicked)
         self.ui.actSaveImage.triggered.connect(self.actSaveImageClicked)
         self.ui.actSaveGraphic.triggered.connect(self.actSaveGraphicClicked)
+        self.ui.actAbout.triggered.connect(self.actAboutClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
@@ -211,6 +215,9 @@ class MainWindow(QtWidgets.QMainWindow):
     def sbPositionValueEditingFinished(self):
         self.camera.position_index = self.ui.cbPosition.currentIndex()
         self.camera.position_value = self.ui.sbPositionValue.value()
+
+    def actAboutClicked(self):
+        self.about.show()
 
     def actSavePhaseClicked(self):
         filename = self.showSaveImageDialog()

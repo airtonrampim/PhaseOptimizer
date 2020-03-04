@@ -202,7 +202,7 @@ class Ui_MainWindow(object):
         self.lblLengthGrating.setText(_translate("MainWindow", "Comprimento:"))
         self.cbBinary.setText(_translate("MainWindow", "Imagem binária"))
         self.mnFile.setTitle(_translate("MainWindow", "&Arquivo"))
-        self.mnHelp.setTitle(_translate("MainWindow", "Ajuda"))
+        self.mnHelp.setTitle(_translate("MainWindow", "A&juda"))
         self.actQuit.setText(_translate("MainWindow", "&Sair"))
         self.actLoadImage.setText(_translate("MainWindow", "&Carregar imagem"))
         self.actAbout.setText(_translate("MainWindow", "Sobre"))

@@ -346,7 +346,7 @@
    </widget>
    <widget class="QMenu" name="mnHelp">
     <property name="title">
-     <string>Ajuda</string>
+     <string>A&amp;juda</string>
     </property>
     <addaction name="actAbout"/>
    </widget>
