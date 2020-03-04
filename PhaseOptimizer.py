@@ -169,7 +169,7 @@ class MainWindow(QtWidgets.QMainWindow):
         options = QtWidgets.QFileDialog.Options()
         options |= QtWidgets.QFileDialog.DontUseNativeDialog
         options |= QtWidgets.QFileDialog.HideNameFilterDetails
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption="Abrir imagem", filter="Imagem (*)", options = options)
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(self, caption="Salvar imagem", filter="Imagem (*)", options = options)
         return filename
 
     def showOpenImageDialog(self):
