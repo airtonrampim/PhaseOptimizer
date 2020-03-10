@@ -1,3 +1,4 @@
+import os
 import cv2
 import sys
 import matplotlib
@@ -190,7 +191,10 @@ class MainWindow(QtWidgets.QMainWindow):
             cv2.imwrite(filename, camera_image)
 
     def actUpdatePhaseClicked(self):
-        self.loadImageFromFile(self.filename_image)
+        if os.path.isfile(self.filename_image):
+            self.loadImageFromFile(self.filename_image)
+        else:
+            self.showDialog(QtWidgets.QMessageBox.Warning, 'Aviso', 'Arquivo %s não encontrado' % self.filename_image)
 
     def actSaveGraphicClicked(self):
         figure = self.camera.get_graphic_figure()
