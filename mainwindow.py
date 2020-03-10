@@ -159,6 +159,8 @@ class Ui_MainWindow(object):
         self.actSavePhase.setObjectName("actSavePhase")
         self.actSaveGraphic = QtWidgets.QAction(MainWindow)
         self.actSaveGraphic.setObjectName("actSaveGraphic")
+        self.actUpdatePhase = QtWidgets.QAction(MainWindow)
+        self.actUpdatePhase.setObjectName("actUpdatePhase")
         self.mnFile.addAction(self.actLoadImage)
         self.mnFile.addSeparator()
         self.mnFile.addAction(self.actQuit)
@@ -210,3 +212,4 @@ class Ui_MainWindow(object):
         self.actSaveImage.setToolTip(_translate("MainWindow", "Salvar imagem"))
         self.actSavePhase.setText(_translate("MainWindow", "Salvar fase"))
         self.actSaveGraphic.setText(_translate("MainWindow", "Salvar gráfico"))
+        self.actUpdatePhase.setText(_translate("MainWindow", "Atualizar"))

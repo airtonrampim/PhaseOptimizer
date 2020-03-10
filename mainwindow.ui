@@ -387,6 +387,11 @@
     <string>Salvar gráfico</string>
    </property>
   </action>
+  <action name="actUpdatePhase">
+   <property name="text">
+    <string>Atualizar</string>
+   </property>
+  </action>
  </widget>
  <tabstops>
   <tabstop>sbX</tabstop>

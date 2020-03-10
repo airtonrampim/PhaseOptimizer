@@ -109,6 +109,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.phase = None
         self.image = None
         self.image_correction = None
+        self.filename_image = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
         
         self.x_ref = SLM_SHAPE[1]
@@ -117,11 +118,13 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
         self.ui.lblPhase.addAction(self.ui.actSavePhase)
+        self.ui.lblPhase.addAction(self.ui.actUpdatePhase)
         self.ui.lblCamera.addAction(self.ui.actSaveImage)
         self.ui.lblCameraSideView.addAction(self.ui.actSaveGraphic)
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.actSavePhase.triggered.connect(self.actSavePhaseClicked)
         self.ui.actSaveImage.triggered.connect(self.actSaveImageClicked)
+        self.ui.actUpdatePhase.triggered.connect(self.actUpdatePhaseClicked)
         self.ui.actSaveGraphic.triggered.connect(self.actSaveGraphicClicked)
         self.ui.actAbout.triggered.connect(self.actAboutClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
@@ -148,11 +151,15 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.sbPositionValue.setValue(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()]//2)
         self.ui.sbDistanceGrating.setMaximum(SLM_SHAPE[0])
         self.ui.sbLengthGrating.setMaximum(SLM_SHAPE[0])
+        
+    # Multithread events ----------------------------------------------------------------------------------------------
 
     @QtCore.pyqtSlot(list)
     def setImage(self, images):
         self.ui.lblCamera.setPixmap(QtGui.QPixmap.fromImage(images[0]))
         self.ui.lblCameraSideView.setPixmap(QtGui.QPixmap.fromImage(images[1]))
+
+    # Application events ----------------------------------------------------------------------------------------------
 
     def closeEvent(self, event):
         super().closeEvent(event)
@@ -164,6 +171,72 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.image_width = self.ui.lblCamera.width()
         self.camera.curve_height = self.ui.lblCameraSideView.height()
         self.camera.curve_width = self.ui.lblCameraSideView.width()
+
+    def actLoadImageClicked(self):
+        filename = self.showOpenImageDialog()
+        if filename:
+            self.filename_image = filename
+            self.loadImageFromFile(self.filename_image)
+
+    def actSavePhaseClicked(self):
+        filename = self.showSaveImageDialog()
+        if filename:
+            cv2.imwrite(filename, self.phase)
+
+    def actSaveImageClicked(self):
+        camera_image = self.camera.get_image()
+        filename = self.showSaveImageDialog()
+        if filename:
+            cv2.imwrite(filename, camera_image)
+
+    def actUpdatePhaseClicked(self):
+        self.loadImageFromFile(self.filename_image)
+
+    def actSaveGraphicClicked(self):
+        figure = self.camera.get_graphic_figure()
+        filename = self.showSaveImageDialog()
+        if filename:
+            figure.savefig(filename)
+
+    def actAboutClicked(self):
+        self.about.show()
+
+    def cbPositionIndexChanged(self):
+        self.ui.sbPositionValue.setMaximum(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()])
+        self.camera.position_index = self.ui.cbPosition.currentIndex()
+        self.camera.position_value = self.ui.sbPositionValue.value()
+
+    def sbPositionValueEditingFinished(self):
+        self.camera.position_index = self.ui.cbPosition.currentIndex()
+        self.camera.position_value = self.ui.sbPositionValue.value()
+
+    def sbCoordsGratingEditingFinished(self):
+        coords = self.ui.sbX.value(), self.ui.sbY.value()
+        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        self.update(coords, grating_params)
+
+    def pbOptimizeClicked(self):
+        camera_image = self.camera.get_image()
+        self.updateWarpPosition()
+        aligned_image = align_image(self.image, camera_image, self.warp)
+        
+        #ref_value = np.min(aligned_image[75:(75+125), 140:(140+90)])
+        
+        self.image_correction = 1E-2*(self.ui.sbDistanceGrating.value()*self.image - self.ui.sbLengthGrating.value()*aligned_image)
+        
+        coords = self.ui.sbX.value(), self.ui.sbY.value()
+        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        self.update(coords, grating_params)
+
+    def pbAlignClicked(self):
+        camera_image = self.camera.get_image()
+        warp, match_res = get_warp(self.image, camera_image)
+        self.x_ref = self.ui.sbX.value()
+        self.y_ref = self.ui.sbY.value()
+        self.warp = warp
+        self.ui.lblConfidence.setText("Nível de confidência: %.2f%%" % (100*match_res))
+
+    # Other procedures -------------------------------------------------------------------------------------------------
 
     def showSaveImageDialog(self):
         options = QtWidgets.QFileDialog.Options()
@@ -207,38 +280,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.warp[0,-1] = 290 - self.ui.sbX.value() #302
         self.warp[1,-1] = 296 - self.ui.sbY.value() #308
 
-    def cbPositionIndexChanged(self):
-        self.ui.sbPositionValue.setMaximum(self.camera.get_camera_shape()[1 - self.ui.cbPosition.currentIndex()])
-        self.camera.position_index = self.ui.cbPosition.currentIndex()
-        self.camera.position_value = self.ui.sbPositionValue.value()
-
-    def sbPositionValueEditingFinished(self):
-        self.camera.position_index = self.ui.cbPosition.currentIndex()
-        self.camera.position_value = self.ui.sbPositionValue.value()
-
-    def actAboutClicked(self):
-        self.about.show()
-
-    def actSavePhaseClicked(self):
-        filename = self.showSaveImageDialog()
-        if filename:
-            cv2.imwrite(filename, self.phase)
-    
-    def actSaveImageClicked(self):
-        camera_image = self.camera.get_image()
-        filename = self.showSaveImageDialog()
-        if filename:
-            cv2.imwrite(filename, camera_image)
-    
-    def actSaveGraphicClicked(self):
-        figure = self.camera.get_graphic_figure()
-        filename = self.showSaveImageDialog()
-        if filename:
-            figure.savefig(filename)
-
-    def actLoadImageClicked(self):
-        filename = self.showOpenImageDialog()
-        if filename:
+    def loadImageFromFile(self, filename):
             image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
             self.image = image
             self.image_correction = image
@@ -282,32 +324,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
-
-    def sbCoordsGratingEditingFinished(self):
-        coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
-        self.update(coords, grating_params)
-
-    def pbOptimizeClicked(self):
-        camera_image = self.camera.get_image()
-        self.updateWarpPosition()
-        aligned_image = align_image(self.image, camera_image, self.warp)
-        
-        #ref_value = np.min(aligned_image[75:(75+125), 140:(140+90)])
-        
-        self.image_correction = 1E-2*(self.ui.sbDistanceGrating.value()*self.image - self.ui.sbLengthGrating.value()*aligned_image)
-        
-        coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
-        self.update(coords, grating_params)
-    
-    def pbAlignClicked(self):
-        camera_image = self.camera.get_image()
-        warp, match_res = get_warp(self.image, camera_image)
-        self.x_ref = self.ui.sbX.value()
-        self.y_ref = self.ui.sbY.value()
-        self.warp = warp
-        self.ui.lblConfidence.setText("Nível de confidência: %.2f%%" % (100*match_res))
 
 app = QtWidgets.QApplication(sys.argv)
 
