@@ -132,8 +132,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbX.editingFinished.connect(self.sbCoordsGratingEditingFinished)
         self.ui.sbY.editingFinished.connect(self.sbCoordsGratingEditingFinished)
-        self.ui.sbDistanceGrating.editingFinished.connect(self.pbOptimizeClicked)#(self.sbCoordsGratingEditingFinished)
-        self.ui.sbLengthGrating.editingFinished.connect(self.pbOptimizeClicked)#(self.sbCoordsGratingEditingFinished)
+        self.ui.sbDistanceGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
+        self.ui.sbLengthGrating.editingFinished.connect(self.sbCoordsGratingEditingFinished)
         self.ui.cbBinary.clicked.connect(self.sbCoordsGratingEditingFinished)
         self.ui.pbOptimize.clicked.connect(self.pbOptimizeClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
@@ -216,20 +216,23 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def sbCoordsGratingEditingFinished(self):
         coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
         self.update(coords, grating_params)
 
     def pbOptimizeClicked(self):
         camera_image = self.camera.get_image()
         self.updateWarpPosition()
+
         aligned_image = align_image(self.image, camera_image, self.warp)
-        
-        #ref_value = np.min(aligned_image[75:(75+125), 140:(140+90)])
-        
-        self.image_correction = 1E-2*(self.ui.sbDistanceGrating.value()*self.image - self.ui.sbLengthGrating.value()*aligned_image)
-        
+        img_min, img_max = np.min(self.image), np.max(self.image)
+        cam_min, cam_max = np.min(aligned_image), np.max(aligned_image)
+        self.ui.lblConfidence.setText("Contraste: %d - %d (imagem)/%d - %d (câmera)" % (img_min, img_max, cam_min, cam_max))
+
+        factor = self.ui.dsbContrast.value()/100.
+        self.image_correction = self.image - factor*aligned_image
+
         coords = self.ui.sbX.value(), self.ui.sbY.value()
-        grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+        grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
         self.update(coords, grating_params)
 
     def pbAlignClicked(self):
@@ -238,7 +241,9 @@ class MainWindow(QtWidgets.QMainWindow):
         self.x_ref = self.ui.sbX.value()
         self.y_ref = self.ui.sbY.value()
         self.warp = warp
-        self.ui.lblConfidence.setText("Nível de confidência: %.2f%%" % (100*match_res))
+        img_min, img_max = np.min(self.image), np.max(self.image)
+        cam_min, cam_max = np.min(camera_image), np.max(camera_image)
+        self.ui.lblConfidence.setText("Confidência: %.2f%%. Contraste: %d - %d (imagem)/%d - %d (câmera)" % (100*match_res, img_min, img_max, cam_min, cam_max))
 
     # Other procedures -------------------------------------------------------------------------------------------------
 
@@ -310,7 +315,7 @@ class MainWindow(QtWidgets.QMainWindow):
             self.ui.sbY.setValue(int((y_c*SLM_SHAPE[0]/self.camera.get_camera_shape()[0] - y_i)))
 
             coords = self.ui.sbX.value(), self.ui.sbY.value()
-            grating_params = 1,1#self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
+            grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
             phase = generate_pishift(image, coords = coords, shape = SLM_SHAPE, binary = self.ui.cbBinary.isChecked(), grating_params = grating_params)
             self.phase = phase
             self.camera.set_phase(phase)
