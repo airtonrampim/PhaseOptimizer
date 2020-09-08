@@ -1,28 +1,32 @@
 import cv2
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 def find_cutoff(image, max_value = 256):
     h = cv2.calcHist([image], [0], None, [max_value], [0,max_value]).flatten()
     x = np.arange(1, len(h) + 1)
     return np.sum(x*h)/np.sum(h)
 
 #https://stackoverflow.com/a/60064072/9257438
-def get_corners(image):
-    # blur image
-    image_inv = 255 - image
-    blur = cv2.GaussianBlur(image_inv, (3,3), 0)
+def get_corners(image, apply_correction):
+    rect = image
+    if apply_correction:
+        # blur image
+        image_inv = 255 - image
+        blur = cv2.GaussianBlur(image_inv, (3,3), 0)
 
-    # do adaptive threshold on gray image
-    thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 75, 2)
+        # do adaptive threshold on gray image
+        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 75, 2)
 
-    # apply morphology
-    kernel = np.ones((5,5), np.uint8)
-    rect = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-    rect = cv2.morphologyEx(rect, cv2.MORPH_CLOSE, kernel)
+        # apply morphology
+        kernel = np.ones((5,5), np.uint8)
+        rect = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+        rect = cv2.morphologyEx(rect, cv2.MORPH_CLOSE, kernel)
 
-    # thin
-    kernel = np.ones((5,5), np.uint8)
-    rect = cv2.morphologyEx(rect, cv2.MORPH_ERODE, kernel)
+        # thin
+        kernel = np.ones((5,5), np.uint8)
+        rect = cv2.morphologyEx(rect, cv2.MORPH_ERODE, kernel)
 
     # get largest contour
     contours = cv2.findContours(rect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -47,8 +51,8 @@ def align_image(image, camera, warp):
     return mask*cv2.warpAffine(camera, warp, image.shape[::-1])
 
 def get_warp(image, camera):
-    image_box = get_corners(image)
-    camera_box = get_corners(camera)
+    image_box = get_corners(image, False)
+    camera_box = get_corners(camera, True)
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 

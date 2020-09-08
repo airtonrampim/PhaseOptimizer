@@ -6,6 +6,8 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 import numpy as np
 
+import matplotlib.pyplot as plt
+
 from phase import generate_pishift
 from camera import Camera
 from optimize import centroid, align_image, get_warp
@@ -228,8 +230,9 @@ class MainWindow(QtWidgets.QMainWindow):
         cam_min, cam_max = np.min(aligned_image), np.max(aligned_image)
         self.ui.lblConfidence.setText("Contraste: %d - %d (imagem)/%d - %d (câmera)" % (img_min, img_max, cam_min, cam_max))
 
+
         factor = self.ui.dsbContrast.value()/100.
-        self.image_correction = self.image - factor*aligned_image
+        self.image_correction =  (self.image - factor*aligned_image).astype(self.image.dtype)
 
         coords = self.ui.sbX.value(), self.ui.sbY.value()
         grating_params = self.ui.sbDistanceGrating.value(), self.ui.sbLengthGrating.value()
@@ -286,8 +289,11 @@ class MainWindow(QtWidgets.QMainWindow):
         msgBox.exec()
 
     def updateWarpPosition(self):
-        self.warp[0,-1] = 290 - self.ui.sbX.value() #302
-        self.warp[1,-1] = 296 - self.ui.sbY.value() #308
+        pass
+        #TODO: estudar mais sobre transformada afim para consertar a translacao
+
+        #self.warp[0,-1] = 302 - self.ui.sbX.value() #290
+        #self.warp[1,-1] = 308 - self.ui.sbY.value() #296
 
     def loadImageFromFile(self, filename):
             image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
