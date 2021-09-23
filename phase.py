@@ -9,9 +9,9 @@ def adjust_image(image, coords, shape):
 
     return result
 
-def generate_pishift(image, line_thickness = 1):
+def generate_pishift(image, line_thickness = 1, phase_max = 0.01):
     result = image.copy()
-    result = 0.41*result/np.max(result)
+    result = (phase_max*128/np.pi)*result/np.max(result)
     for line in range(line_thickness):
         result[line::(2*line_thickness),:] = 128
     return result

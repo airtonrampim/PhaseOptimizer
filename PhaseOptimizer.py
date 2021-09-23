@@ -146,7 +146,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.actAbout.triggered.connect(self.actAboutClicked)
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
-        self.ui.sbLineThickness.editingFinished.connect(self.sbLineThicknessEditingFinished)
+        self.ui.sbLineThickness.editingFinished.connect(self.sbPhaseEditingFinished)
+        self.ui.dsbPhaseValue.editingFinished.connect(self.sbPhaseEditingFinished)
         self.ui.pbCorrect.clicked.connect(self.pbCorrectClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
@@ -224,8 +225,8 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.position_index = self.ui.cbPosition.currentIndex()
         self.camera.position_value = self.ui.sbPositionValue.value()
 
-    def sbLineThicknessEditingFinished(self):
-        self.update(self.ui.sbLineThickness.value())
+    def sbPhaseEditingFinished(self):
+        self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
 
     def pbCorrectClicked(self):
         camera_image = self.camera.get_image()
@@ -249,7 +250,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
         self.image_correction = np.divide(self.image, aligned_beam, out=np.zeros_like(self.image), where=aligned_beam!=0)
 
-        self.update(self.ui.sbLineThickness.value())
+        self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
 
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
@@ -317,20 +318,12 @@ class MainWindow(QtWidgets.QMainWindow):
             self.image = image_slm
             self.image_correction = image_slm.copy()
 
-            phase = generate_pishift(self.image_correction, self.ui.sbLineThickness.value())
-            self.phase = phase
-            self.camera.set_phase(phase)
-    
-            self.loadFigure(self.phase, self.ui.lblPhase)
-            self.cbPositionIndexChanged()
-            
+            self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())            
             self.ui.gbPhase.setEnabled(True)
 
-    def update(self, line_thickness):
-        self.phase = generate_pishift(self.image_correction, line_thickness)
+    def update(self, line_thickness, phase_max):
+        self.phase = generate_pishift(self.image_correction, line_thickness, phase_max)
         self.camera.set_phase(self.phase)
-        camera_image = self.camera.get_image()
-
         self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
 
