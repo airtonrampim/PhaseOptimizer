@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>891</width>
+    <width>1241</width>
     <height>524</height>
    </rect>
   </property>
@@ -41,6 +41,95 @@
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </item>
+    <item row="1" column="0" rowspan="2">
+     <widget class="QGroupBox" name="gbPhase">
+      <property name="enabled">
+       <bool>false</bool>
+      </property>
+      <property name="title">
+       <string>Padrão de fase</string>
+      </property>
+      <layout class="QGridLayout" name="gridLayout_3">
+       <item row="8" column="7">
+        <widget class="QPushButton" name="pbCorrect">
+         <property name="text">
+          <string>Corrigir</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="2">
+        <widget class="QLabel" name="lblLineThickness">
+         <property name="text">
+          <string>Espessura da linha:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2" colspan="6">
+        <widget class="QLabel" name="lblPhase">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ActionsContextMenu</enum>
+         </property>
+         <property name="text">
+          <string/>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="8">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="0" colspan="3">
+        <widget class="QPushButton" name="pbAlign">
+         <property name="text">
+          <string>A&amp;linhar</string>
+         </property>
+        </widget>
+       </item>
+       <item row="1" column="3">
+        <widget class="QSpinBox" name="sbLineThickness">
+         <property name="maximumSize">
+          <size>
+           <width>52</width>
+           <height>32</height>
+          </size>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>1024</number>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="5">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="8" column="3">
+        <widget class="QLabel" name="lblConfidence">
+         <property name="text">
+          <string>Confidência: 000.00%</string>
          </property>
         </widget>
        </item>
@@ -132,222 +221,6 @@
       </layout>
      </widget>
     </item>
-    <item row="1" column="0" rowspan="2">
-     <widget class="QGroupBox" name="gbPhase">
-      <property name="enabled">
-       <bool>false</bool>
-      </property>
-      <property name="title">
-       <string>Padrão de fase</string>
-      </property>
-      <layout class="QGridLayout" name="gridLayout_3">
-       <item row="1" column="2">
-        <widget class="QSpinBox" name="sbX">
-         <property name="maximumSize">
-          <size>
-           <width>52</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indica a posição X do padrão de fase no canvas do SLM&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>1280</number>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="3">
-        <widget class="QLabel" name="lblY">
-         <property name="text">
-          <string>Posição Y:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="2">
-        <widget class="QSpinBox" name="sbDistanceGrating">
-         <property name="maximumSize">
-          <size>
-           <width>52</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>1024</number>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="3">
-        <widget class="QLabel" name="lblLengthGrating">
-         <property name="text">
-          <string>Comprimento:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="6" column="1" colspan="8">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="2">
-        <widget class="QLabel" name="lblConfidence">
-         <property name="text">
-          <string>Nível de confidência: </string>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="5" colspan="4">
-        <spacer name="horizontalSpacer">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="7" column="6">
-        <widget class="QLabel" name="lblContrast">
-         <property name="text">
-          <string>Contraste:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="8">
-        <widget class="QCheckBox" name="cbBinary">
-         <property name="text">
-          <string>Imagem binária</string>
-         </property>
-         <property name="checked">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item row="1" column="1">
-        <widget class="QLabel" name="lblX">
-         <property name="text">
-          <string>Posição X:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="8">
-        <widget class="QPushButton" name="pbOptimize">
-         <property name="text">
-          <string>&amp;Otimizar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="4">
-        <widget class="QSpinBox" name="sbLengthGrating">
-         <property name="maximumSize">
-          <size>
-           <width>52</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>1024</number>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1" colspan="8">
-        <widget class="QLabel" name="lblPhase">
-         <property name="contextMenuPolicy">
-          <enum>Qt::ActionsContextMenu</enum>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="1">
-        <widget class="QPushButton" name="pbAlign">
-         <property name="text">
-          <string>A&amp;linhar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="5">
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="1" column="4">
-        <widget class="QSpinBox" name="sbY">
-         <property name="maximumSize">
-          <size>
-           <width>52</width>
-           <height>32</height>
-          </size>
-         </property>
-         <property name="toolTip">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Indica a posição Y do padrão de fase no canvas do SLM&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="whatsThis">
-          <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;&lt;br/&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-         </property>
-         <property name="minimum">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <number>1024</number>
-         </property>
-        </widget>
-       </item>
-       <item row="3" column="1">
-        <widget class="QLabel" name="lblDistanceGrating">
-         <property name="text">
-          <string>Distância:</string>
-         </property>
-        </widget>
-       </item>
-       <item row="7" column="7">
-        <widget class="QDoubleSpinBox" name="dsbContrast">
-         <property name="decimals">
-          <number>1</number>
-         </property>
-         <property name="maximum">
-          <double>100.000000000000000</double>
-         </property>
-         <property name="singleStep">
-          <double>0.100000000000000</double>
-         </property>
-         <property name="value">
-          <double>100.000000000000000</double>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </widget>
-    </item>
    </layout>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -355,7 +228,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>891</width>
+     <width>1241</width>
      <height>30</height>
     </rect>
    </property>
@@ -417,14 +290,9 @@
   </action>
  </widget>
  <tabstops>
-  <tabstop>sbX</tabstop>
-  <tabstop>sbY</tabstop>
-  <tabstop>sbDistanceGrating</tabstop>
-  <tabstop>sbLengthGrating</tabstop>
-  <tabstop>cbBinary</tabstop>
+  <tabstop>sbLineThickness</tabstop>
   <tabstop>pbAlign</tabstop>
-  <tabstop>dsbContrast</tabstop>
-  <tabstop>pbOptimize</tabstop>
+  <tabstop>pbCorrect</tabstop>
   <tabstop>cbPosition</tabstop>
   <tabstop>sbPositionValue</tabstop>
  </tabstops>

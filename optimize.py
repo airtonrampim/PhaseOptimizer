@@ -3,6 +3,8 @@ import numpy as np
 
 import matplotlib.pyplot as plt
 
+from PyQt5.QtCore import qDebug
+
 def find_cutoff(image, max_value = 256):
     h = cv2.calcHist([image], [0], None, [max_value], [0,max_value]).flatten()
     x = np.arange(1, len(h) + 1)
@@ -10,49 +12,32 @@ def find_cutoff(image, max_value = 256):
 
 #https://stackoverflow.com/a/60064072/9257438
 def get_corners(image, apply_correction):
-    rect = image
-    if apply_correction:
-        # blur image
-        image_inv = 255 - image
-        blur = cv2.GaussianBlur(image_inv, (3,3), 0)
-
-        # do adaptive threshold on gray image
-        thresh = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_MEAN_C, cv2.THRESH_BINARY_INV, 75, 2)
-
-        # apply morphology
-        kernel = np.ones((5,5), np.uint8)
-        rect = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-        rect = cv2.morphologyEx(rect, cv2.MORPH_CLOSE, kernel)
-
-        # thin
-        kernel = np.ones((5,5), np.uint8)
-        rect = cv2.morphologyEx(rect, cv2.MORPH_ERODE, kernel)
+    rect = image.astype(np.uint8)
+    ret, thresh = cv2.threshold(rect, 0, np.max(rect), cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
     # get largest contour
-    contours = cv2.findContours(rect, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours = contours[0] if len(contours) == 2 else contours[1]
-    
-    big_contour = 0
+    contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+
+    res_contour = contours[0]
+    area_thresh = 0
     for c in contours:
-        area_thresh = 0
         area = cv2.contourArea(c)
-        if area > area_thresh:
+        if (area > area_thresh):
             area = area_thresh
-            big_contour = c
+            res_contour = c
 
     # get rotated rectangle from contour
-    rot_rect = cv2.minAreaRect(big_contour)
+    rot_rect = cv2.minAreaRect(res_contour)
     box = cv2.boxPoints(rot_rect)
     box = np.int0(box)
     return box
 
 def align_image(image, camera, warp):
-    mask = np.where(image > 0, 1, 0)
-    return mask*cv2.warpAffine(camera, warp, image.shape[::-1])
+    return cv2.warpAffine(camera, warp, image.shape[::-1])
 
 def get_warp(image, camera):
     image_box = get_corners(image, False)
-    camera_box = get_corners(camera, True)
+    camera_box = get_corners(camera, False)
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 
