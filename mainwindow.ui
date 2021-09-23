@@ -320,6 +320,7 @@
  </widget>
  <tabstops>
   <tabstop>sbLineThickness</tabstop>
+  <tabstop>dsbPhaseValue</tabstop>
   <tabstop>pbAlign</tabstop>
   <tabstop>pbCorrect</tabstop>
   <tabstop>cbPosition</tabstop>
