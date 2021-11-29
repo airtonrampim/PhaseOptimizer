@@ -1,14 +1,5 @@
 import numpy as np
 
-def adjust_image(image, coords, shape):
-    h_i, w_i = image.shape
-    x0, y0 = coords
-
-    result = np.zeros(shape)
-    result[y0:(y0 + h_i), x0:(x0 + w_i)] = image
-
-    return result
-
 def generate_pishift(image, line_thickness = 1, phase_max = 0.01):
     result = image.copy()
     result = (phase_max*128/np.pi)*result/np.max(result)

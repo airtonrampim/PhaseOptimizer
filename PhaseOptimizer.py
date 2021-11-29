@@ -12,7 +12,7 @@ import numpy as np
 from scipy.misc import derivative
 import matplotlib.pyplot as plt
 
-from phase import generate_pishift, adjust_image
+from phase import generate_pishift
 from camera import Camera
 from optimize import centroid, align_image, get_warp
 
@@ -69,9 +69,6 @@ class CameraThread(QtCore.QThread):
             axes = figure.gca()
             axes.imshow(self._image, cmap='gray')
             
-            #TODO: Remover
-            #axes.add_patch(plt.Circle((600, 550), radius=50, edgecolor='b', facecolor='none'))
-            
             canvas.draw()
             size = canvas.size()
             width, height = size.width(), size.height()
@@ -102,9 +99,6 @@ class CameraThread(QtCore.QThread):
             axes.set_xlabel('Posicao')
             axes.set_ylabel('Intensidade')
             axes.plot(x, y)
-
-            # TODO: Remover
-            #axes.add_patch(ConnectionPatch((600, ymin), (600, ymax), "data", "data", color='b'))
 
             canvas.draw()
             size = canvas.size()
@@ -229,26 +223,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
 
     def pbCorrectClicked(self):
-        camera_image = self.camera.get_image()
-
         if self.initial_beam is None:
             self.showDialog(QtWidgets.QMessageBox.Abort, 'Erro', 'Perfil de intensidade não capturado.')
             return
-
-        mask = np.where(self.image_correction > 0, 1, 0) # Remove o fundo da imagem
-        kernel = np.ones((20,20), dtype=np.uint8)
-        image_l = cv2.erode(self.image_correction, kernel, iterations=1)
-        mask_l = np.where(image_l > 0, 1, 0) # Remove os cantos da imagem
-
-        #aligned_camera_image = mask*align_image(self.image_correction, camera_image, self.warp)
-
-        #img_min, img_max = np.min(self.image_correction), np.max(self.image_correction)
-        #cam_min, cam_max = np.min(aligned_camera_image), np.max(aligned_camera_image)
-        #self.ui.lblConfidence.setText("Contraste: %d - %d (imagem)/%d - %d (câmera)" % (img_min, img_max, cam_min, cam_max))
         
         aligned_beam = align_image(self.image_correction, self.initial_beam, self.warp)
-
-        self.image_correction = np.divide(self.image, aligned_beam, out=np.zeros_like(self.image), where=aligned_beam!=0)
+        self.image_correction = np.divide(self.image.astype(np.float64), aligned_beam.astype(np.float64), out=np.zeros_like(self.image,dtype=np.float64), where=aligned_beam!=0)
 
         self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
 
@@ -309,14 +289,12 @@ class MainWindow(QtWidgets.QMainWindow):
 
             h, w = np.array(image.shape)
 
-            if np.any([h > SLM_SHAPE[0], w > SLM_SHAPE[1]]):
-                self.showDialog(QtWidgets.QMessageBox.Warning, 'Aviso', 'Tamanho da imagem deve ser menor que a região do SLM (%d x %d)' % SLM_SHAPE)
+            if np.any([h != SLM_SHAPE[0], w != SLM_SHAPE[1]]):
+                self.showDialog(QtWidgets.QMessageBox.Warning, 'Aviso', 'Tamanho da imagem deve ser do tamanho da região do SLM (%d x %d)' % SLM_SHAPE)
                 return
 
-            coords = int((x_c*SLM_SHAPE[1]/self.camera.get_camera_shape()[1] - x_i)), int((y_c*SLM_SHAPE[0]/self.camera.get_camera_shape()[0] - y_i))
-            image_slm = adjust_image(image, coords = coords, shape = SLM_SHAPE)
-            self.image = image_slm
-            self.image_correction = image_slm.copy()
+            self.image = image
+            self.image_correction = image.copy()
 
             self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())            
             self.ui.gbPhase.setEnabled(True)

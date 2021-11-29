@@ -1,22 +1,47 @@
 import cv2
 import numpy as np
-
-import matplotlib.pyplot as plt
+from sklearn.mixture import GaussianMixture
 
 from PyQt5.QtCore import qDebug
 
-def find_cutoff(image, max_value = 256):
-    h = cv2.calcHist([image], [0], None, [max_value], [0,max_value]).flatten()
-    x = np.arange(1, len(h) + 1)
-    return np.sum(x*h)/np.sum(h)
 
 #https://stackoverflow.com/a/60064072/9257438
-def get_corners(image, apply_correction):
-    rect = image.astype(np.uint8)
-    ret, thresh = cv2.threshold(rect, 0, np.max(rect), cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+def get_corners(image, apply_threshold):    
+    thresh_res = image
+    if apply_threshold:
+        gmm = GaussianMixture(n_components=2).fit(image.flatten().reshape(-1,1))
+
+        mu1 = gmm.means_.flatten()[0]
+        sigma1 = np.sqrt(gmm.covariances_.flatten()[0])
+        mu2 = gmm.means_.flatten()[1]
+        sigma2 = np.sqrt(gmm.covariances_.flatten()[1])    
+        if mu1 > mu2:
+            mu1 = gmm.means_.flatten()[1]
+            sigma1 = np.sqrt(gmm.covariances_.flatten()[1])
+            mu2 = gmm.means_.flatten()[0]
+            sigma2 = np.sqrt(gmm.covariances_.flatten()[0])
+        
+        qDebug(str(mu1))
+        qDebug(str(sigma1))
+        qDebug(str(mu2))
+        qDebug(str(sigma2))
+        
+        thresh_value = mu1
+        if sigma1 == sigma2:
+            if mu1 != mu2:
+                thresh_value = (mu1+mu2)/2
+        else:
+            thresh_value = (sigma2**2*mu1-sigma1**2*mu2)/(sigma2**2-sigma1**2) + sigma1*sigma2/(sigma2**2-sigma1**2)*np.sqrt((mu2-mu1)**2+2*(sigma2**2-sigma1**2)*np.log(sigma2/sigma1))
+
+        qDebug(str(thresh_value))
+
+        thresh_value, thresh = cv2.threshold(image, thresh_value, 255, cv2.THRESH_BINARY)
+        cv2.imwrite('/tmp/thresh_res.png', thresh)
+        kernel = np.ones((3,3), np.uint8)
+        thresh_res = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
     # get largest contour
-    contours = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    contours = cv2.findContours(thresh_res, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
 
     res_contour = contours[0]
     area_thresh = 0
@@ -37,68 +62,11 @@ def align_image(image, camera, warp):
 
 def get_warp(image, camera):
     image_box = get_corners(image, False)
-    camera_box = get_corners(camera, False)
+    qDebug(str(image_box))
+    camera_box = get_corners(camera, True)
+    qDebug(str(camera_box))
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
-
-def get_warp2(image, camera):
-    orb = cv2.ORB_create()
-    kp_image, des_image = orb.detectAndCompute(image, None)
-    kp_camera, des_camera = orb.detectAndCompute(camera, None)
-    
-    bf = cv2.BFMatcher(cv2.NORM_HAMMING, crossCheck = True)
-    
-    matches = sorted(bf.match(des_camera, des_image), key = lambda x: x.distance)
-    
-    kl_image, kl_camera = [], []
-    
-    for m in matches:
-        kl_camera.append(kp_camera[m.queryIdx].pt)
-        kl_image.append(kp_image[m.trainIdx].pt)
-    
-    kl_camera = np.float32(kl_camera)
-    kl_image = np.float32(kl_image)
-    
-    warp, match_res = cv2.estimateAffine2D(kl_image, kl_camera)
-    if warp is None:
-        warp, match_res = cv2.estimateAffinePartial2D(kl_image, kl_camera)
-    return warp, np.sum(match_res)/len(match_res)
-
-def flatness_cost(image):
-    blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
-    _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    
-    image_l = image[np.nonzero(mask)]
-    M = np.sqrt(np.sum(image_l)/np.prod(image_l.shape))
-    return np.sqrt(np.sum((image_l/M - 1)**2)/np.prod(image_l.shape))
-
-def flatness_gradient(image, x0, y0, w, a):
-    blur = cv2.GaussianBlur((255*image).astype(np.uint8),(5,5),0)
-    _, mask = cv2.threshold(blur, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    
-    image_l = image[np.nonzero(mask)]
-
-    M = np.sqrt(np.sum(image_l)/np.prod(image_l.shape))
-    F = np.sqrt(np.sum((image_l/M - 1)**2)/np.prod(image_l.shape))
-
-    height, width = image.shape
-
-    x = np.arange(1, width + 1)
-    y = np.arange(1, height + 1)
-    X, Y = np.meshgrid(x, y)
-    
-    filter = 1 - a*np.exp(-((X - x0)**2 + (Y - y0)**2)/(2*w**2))
-    filter_w = -((X - x0)**2 + (Y - y0)**2)/(w**3)*a*np.exp(-((X - x0)**2 + (Y - y0)**2)/(2*w**2))
-    filter_a = -np.exp(-((X - x0)**2 + (Y - y0)**2)/(2*w**2))
-    
-    filter = filter[np.nonzero(mask)]
-    filter_w = filter_w[np.nonzero(mask)]
-    filter_a = filter_a[np.nonzero(mask)]
-
-    grad_w = np.sum((image_l*filter/M - 1)*(image_l*filter_w - image_l*filter/(2*np.prod(image_l.shape)*M**2)*np.sum(image_l*filter_w)))/(np.prod(image_l.shape)*F*M)
-    grad_a = np.sum((image_l*filter/M - 1)*(image_l*filter_a - image_l*filter/(2*np.prod(image_l.shape)*M**2)*np.sum(image_l*filter_a)))/(np.prod(image_l.shape)*F*M)
-
-    return grad_w, grad_a
 
 def centroid(image):
     h, w = image.shape
