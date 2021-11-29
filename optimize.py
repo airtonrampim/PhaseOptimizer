@@ -2,8 +2,6 @@ import cv2
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
-from PyQt5.QtCore import qDebug
-
 
 #https://stackoverflow.com/a/60064072/9257438
 def get_corners(image, apply_threshold):    
@@ -20,12 +18,7 @@ def get_corners(image, apply_threshold):
             sigma1 = np.sqrt(gmm.covariances_.flatten()[1])
             mu2 = gmm.means_.flatten()[0]
             sigma2 = np.sqrt(gmm.covariances_.flatten()[0])
-        
-        qDebug(str(mu1))
-        qDebug(str(sigma1))
-        qDebug(str(mu2))
-        qDebug(str(sigma2))
-        
+
         thresh_value = mu1
         if sigma1 == sigma2:
             if mu1 != mu2:
@@ -33,10 +26,7 @@ def get_corners(image, apply_threshold):
         else:
             thresh_value = (sigma2**2*mu1-sigma1**2*mu2)/(sigma2**2-sigma1**2) + sigma1*sigma2/(sigma2**2-sigma1**2)*np.sqrt((mu2-mu1)**2+2*(sigma2**2-sigma1**2)*np.log(sigma2/sigma1))
 
-        qDebug(str(thresh_value))
-
         thresh_value, thresh = cv2.threshold(image, thresh_value, 255, cv2.THRESH_BINARY)
-        cv2.imwrite('/tmp/thresh_res.png', thresh)
         kernel = np.ones((3,3), np.uint8)
         thresh_res = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
@@ -62,9 +52,7 @@ def align_image(image, camera, warp):
 
 def get_warp(image, camera):
     image_box = get_corners(image, False)
-    qDebug(str(image_box))
     camera_box = get_corners(camera, True)
-    qDebug(str(camera_box))
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 
