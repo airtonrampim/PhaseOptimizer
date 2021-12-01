@@ -1,0 +1,7 @@
+cff-version: 1.2.0
+message: "Programa com interface gráfica que controla a transmissão da fase e a captura da imagem modulada em tempo real."
+authors:
+  - family-names: Rampim
+    given-names: Airton
+title: "Otimização da técnica de contraste de fase para o desenho de potenciais ópticos"
+version: 1.0.0
