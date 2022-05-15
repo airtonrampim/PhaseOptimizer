@@ -47,9 +47,6 @@ def get_corners(image, apply_threshold):
     box = np.int0(box)
     return box
 
-def align_image(image, camera, warp):
-    return cv2.warpAffine(camera, warp, image.shape[::-1])
-
 def get_warp(image, camera):
     image_box = get_corners(image, False)
     camera_box = get_corners(camera, True)

@@ -56,53 +56,6 @@
        <string>Padrão de fase</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="8" column="8">
-        <widget class="QPushButton" name="pbCorrect">
-         <property name="text">
-          <string>Corrigir</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0" colspan="9">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="6">
-        <spacer name="horizontalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>40</width>
-           <height>20</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item row="0" column="2" colspan="7">
-        <widget class="QLabel" name="lblPhase">
-         <property name="contextMenuPolicy">
-          <enum>Qt::ActionsContextMenu</enum>
-         </property>
-         <property name="text">
-          <string/>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="3">
-        <widget class="QLabel" name="lblConfidence">
-         <property name="text">
-          <string>Confidência: 000.00%</string>
-         </property>
-        </widget>
-       </item>
        <item row="8" column="0" colspan="3">
         <widget class="QPushButton" name="pbAlign">
          <property name="text">
@@ -110,29 +63,33 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="8">
-        <widget class="QDoubleSpinBox" name="dsbPhaseValue">
-         <property name="decimals">
-          <number>4</number>
+       <item row="8" column="7">
+        <widget class="QLabel" name="lblIntValue">
+         <property name="enabled">
+          <bool>false</bool>
          </property>
-         <property name="minimum">
-          <double>0.000100000000000</double>
+         <property name="text">
+          <string>Intensidade máxima:</string>
          </property>
-         <property name="maximum">
-          <double>3.141600000000000</double>
-         </property>
-         <property name="singleStep">
-          <double>0.000100000000000</double>
-         </property>
-         <property name="value">
-          <double>0.010000000000000</double>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
          </property>
         </widget>
        </item>
-       <item row="1" column="2">
-        <widget class="QLabel" name="lblLineThickness">
+       <item row="8" column="9">
+        <widget class="QPushButton" name="pbCorrect">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
          <property name="text">
-          <string>Espessura da linha:</string>
+          <string>Corrigir</string>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="10">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -152,13 +109,59 @@
          </property>
         </widget>
        </item>
-       <item row="1" column="6">
-        <widget class="QLabel" name="lblPhaseValue">
+       <item row="1" column="2">
+        <widget class="QLabel" name="lblLineThickness">
          <property name="text">
-          <string>Valor máximo da fase:</string>
+          <string>Espessura da linha:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="3">
+        <widget class="QLabel" name="lblConfidence">
+         <property name="text">
+          <string>Confidência: 000.00%</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="6">
+        <spacer name="horizontalSpacer_2">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+         <property name="sizeHint" stdset="0">
+          <size>
+           <width>40</width>
+           <height>20</height>
+          </size>
+         </property>
+        </spacer>
+       </item>
+       <item row="0" column="2" colspan="8">
+        <widget class="QLabel" name="lblPhase">
+         <property name="contextMenuPolicy">
+          <enum>Qt::ActionsContextMenu</enum>
+         </property>
+         <property name="text">
+          <string/>
          </property>
          <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+          <set>Qt::AlignCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="8">
+        <widget class="QSpinBox" name="sbIntValue">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="minimum">
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>255</number>
+         </property>
+         <property name="value">
+          <number>255</number>
          </property>
         </widget>
        </item>
@@ -190,7 +193,7 @@
        <item row="0" column="1">
         <widget class="QComboBox" name="cbPosition">
          <property name="currentIndex">
-          <number>1</number>
+          <number>0</number>
          </property>
          <item>
           <property name="text">
@@ -231,6 +234,9 @@
          </property>
          <property name="maximum">
           <number>1280</number>
+         </property>
+         <property name="value">
+          <number>320</number>
          </property>
         </widget>
        </item>
@@ -320,7 +326,6 @@
  </widget>
  <tabstops>
   <tabstop>sbLineThickness</tabstop>
-  <tabstop>dsbPhaseValue</tabstop>
   <tabstop>pbAlign</tabstop>
   <tabstop>pbCorrect</tabstop>
   <tabstop>cbPosition</tabstop>

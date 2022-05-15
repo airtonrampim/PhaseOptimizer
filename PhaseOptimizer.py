@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, align_image, get_warp
+from optimize import centroid, get_warp
 
 from PyQt5.QtCore import qDebug
 
@@ -33,9 +33,14 @@ class CameraThread(QtCore.QThread):
     def __init__(self, shape):
         super().__init__()
         self._camera = Camera(shape)
-        self._image = np.zeros(shape)
+        self._image = None
+        self._beam = None
         self._graphic_figure = None
+        self._mean_index = 0
         
+        self.reset_mean = True
+        self.capture_beam = True
+        self.correction_value = None
         self.facecolor = '#FFFFFF'
         self.image_width = 640
         self.image_height = 480
@@ -46,21 +51,31 @@ class CameraThread(QtCore.QThread):
 
     def set_phase(self, phase):
         self._camera.set_phase(phase)
-    
+        self.reset_mean = True
+
     def get_image(self):
         return self._image
-    
+
+    def get_image_beam(self):
+        return self._beam
+
     def get_camera_shape(self):
         return self._camera.camera_shape
-    
+
     def get_graphic_figure(self):
         return self._graphic_figure
 
     def run(self):
-        x, y = None, None
+        x, y, yb = None, None, None
         gmin, gmax = np.inf, -np.inf
         while True:
             self._image = self._camera.get_image()
+            if self._beam is None:
+                self._beam = self._image
+            if self.capture_beam:
+                self._beam = self._mean_index/(self._mean_index + 1)*self._beam + self._image/(self._mean_index + 1)
+                self._mean_index += 1
+
             h, w = self._image.shape
 
             figure = Figure()
@@ -87,8 +102,10 @@ class CameraThread(QtCore.QThread):
 
             if self.position_index == 0:
                 y = self._image[:, self.position_value - 1]
+                yb = self._beam[:, self.position_value - 1]
             else:
                 y = self._image[self.position_value - 1, :]
+                yb = self._beam[self.position_value - 1, :]
             axes.set_xlim(1, len(y) + 1)
             x = np.arange(1, len(y) + 1)
             ymin, ymax = np.min(self._image), np.max(self._image)
@@ -98,12 +115,16 @@ class CameraThread(QtCore.QThread):
                 axes.set_ylim(gmin, gmax)
             axes.set_xlabel('Posicao')
             axes.set_ylabel('Intensidade')
-            axes.plot(x, y)
+            axes.plot(x, y, color='red')
+            axes.plot(x, yb, color='black')
+            if self.correction_value is not None:
+                axes.axhline(y = self.correction_value, color='red', linestyle='dashed')
 
             canvas.draw()
             size = canvas.size()
             width, height = size.width(), size.height()
             p2 = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+            
 
             self.changePixmap.emit([p1, p2])
     
@@ -141,7 +162,6 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.cbPosition.currentIndexChanged.connect(self.cbPositionIndexChanged)
         self.ui.sbPositionValue.editingFinished.connect(self.sbPositionValueEditingFinished)
         self.ui.sbLineThickness.editingFinished.connect(self.sbPhaseEditingFinished)
-        self.ui.dsbPhaseValue.editingFinished.connect(self.sbPhaseEditingFinished)
         self.ui.pbCorrect.clicked.connect(self.pbCorrectClicked)
         self.ui.pbAlign.clicked.connect(self.pbAlignClicked)
         
@@ -178,7 +198,8 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def actLoadImageClicked(self):
         if self.initial_beam is None:
-            self.initial_beam = self.camera.get_image()
+            self.initial_beam = self.camera.get_image_beam()
+            self.camera.capture_beam = False
         filename = self.showOpenImageDialog()
         if filename:
             self.filename_image = filename
@@ -220,23 +241,30 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.position_value = self.ui.sbPositionValue.value()
 
     def sbPhaseEditingFinished(self):
-        self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
+        self.update(self.ui.sbLineThickness.value())
 
     def pbCorrectClicked(self):
         if self.initial_beam is None:
-            self.showDialog(QtWidgets.QMessageBox.Abort, 'Erro', 'Perfil de intensidade não capturado.')
+            self.showDialog(QtWidgets.QMessageBox.Abort, 'Erro', 'Perfil do feixe não capturado.')
             return
-        
-        aligned_beam = align_image(self.image_correction, self.initial_beam, self.warp)
-        self.image_correction = np.divide(self.image.astype(np.float64), aligned_beam.astype(np.float64), out=np.zeros_like(self.image,dtype=np.float64), where=aligned_beam!=0)
 
-        self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())
+        aligned_beam = cv2.warpAffine(self.initial_beam, self.warp, self.image.shape[::-1])
+        image_correction = self.image.astype(np.float64)*self.ui.sbIntValue.value()/np.max(self.image)
+        image_correction[np.nonzero(aligned_beam)] = image_correction[np.nonzero(aligned_beam)]/aligned_beam[np.nonzero(aligned_beam)]
+        image_correction = np.where(image_correction > 1, 1., np.sqrt(image_correction))
+        self.image_correction = (2*np.arcsin(image_correction)*255/np.pi)
+        self.camera.correction_value = self.ui.sbIntValue.value()
+
+        self.update(self.ui.sbLineThickness.value())
 
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
         warp, match_res = get_warp(self.image, camera_image)
         self.warp = warp
         self.ui.lblConfidence.setText("Confidência: %.2f%%" % (100*match_res))
+        self.ui.lblIntValue.setEnabled(True)
+        self.ui.sbIntValue.setEnabled(True)
+        self.ui.pbCorrect.setEnabled(True)
 
     # Other procedures -------------------------------------------------------------------------------------------------
 
@@ -280,13 +308,6 @@ class MainWindow(QtWidgets.QMainWindow):
 
     def loadImageFromFile(self, filename):
             image = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-            camera_image = self.camera.get_image()
-
-            if np.abs(camera_image).sum() > 0: x_c, y_c = centroid(camera_image/255.)
-            else: x_c, y_c = camera_image.shape[1]/2, camera_image.shape[0]/2
-            if np.abs(image).sum() > 0: x_i, y_i = centroid(image/255.)
-            else: x_i, y_i = image.shape[1]/2, image.shape[0]/2
-
             h, w = np.array(image.shape)
 
             if np.any([h != SLM_SHAPE[0], w != SLM_SHAPE[1]]):
@@ -295,12 +316,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.image = image
             self.image_correction = image.copy()
+            self.camera.correction_value = None
 
-            self.update(self.ui.sbLineThickness.value(), self.ui.dsbPhaseValue.value())            
+            self.update(self.ui.sbLineThickness.value())
             self.ui.gbPhase.setEnabled(True)
 
-    def update(self, line_thickness, phase_max):
-        self.phase = generate_pishift(self.image_correction, line_thickness, phase_max)
+    def update(self, line_thickness):
+        self.phase = generate_pishift(self.image_correction, line_thickness)
         self.camera.set_phase(self.phase)
         self.loadFigure(self.phase, self.ui.lblPhase)
         self.cbPositionIndexChanged()
