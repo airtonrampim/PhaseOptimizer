@@ -186,7 +186,7 @@
        <item row="0" column="2">
         <widget class="QLabel" name="lblIn">
          <property name="text">
-          <string>em</string>
+          <string/>
          </property>
         </widget>
        </item>
@@ -197,12 +197,12 @@
          </property>
          <item>
           <property name="text">
-           <string>X</string>
+           <string>Coluna</string>
           </property>
          </item>
          <item>
           <property name="text">
-           <string>Y</string>
+           <string>Linha</string>
           </property>
          </item>
         </widget>
@@ -223,7 +223,7 @@
        <item row="0" column="0">
         <widget class="QLabel" name="lblPosition">
          <property name="text">
-          <string>Posição</string>
+          <string>Posição:</string>
          </property>
         </widget>
        </item>
@@ -321,6 +321,17 @@
   <action name="actUpdatePhase">
    <property name="text">
     <string>Atualizar</string>
+   </property>
+  </action>
+  <action name="actShowCameraLine">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Mostrar linha</string>
    </property>
   </action>
  </widget>

@@ -38,6 +38,7 @@ class CameraThread(QtCore.QThread):
         self._graphic_figure = None
         self._mean_index = 0
         
+        self.show_camera_line = True
         self.reset_mean = True
         self.capture_beam = True
         self.correction_value = None
@@ -83,7 +84,12 @@ class CameraThread(QtCore.QThread):
             canvas = FigureCanvas(figure)
             axes = figure.gca()
             axes.imshow(self._image, cmap='gray')
-            
+            if self.show_camera_line:
+                if self.position_index == 0:
+                    axes.axvline(x = self.position_value - 1, linestyle='dotted', color='blue')
+                else:
+                    axes.axhline(y = self.position_value - 1, linestyle='dotted', color='blue')
+
             canvas.draw()
             size = canvas.size()
             width, height = size.width(), size.height()
@@ -115,10 +121,10 @@ class CameraThread(QtCore.QThread):
                 axes.set_ylim(gmin, gmax)
             axes.set_xlabel('Posicao')
             axes.set_ylabel('Intensidade')
-            axes.plot(x, y, color='red')
+            axes.plot(x, y, color='blue')
             axes.plot(x, yb, color='black')
             if self.correction_value is not None:
-                axes.axhline(y = self.correction_value, color='red', linestyle='dashed')
+                axes.axhline(y = self.correction_value, color='blue', linestyle='dashed')
 
             canvas.draw()
             size = canvas.size()
@@ -152,10 +158,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.lblPhase.addAction(self.ui.actSavePhase)
         self.ui.lblPhase.addAction(self.ui.actUpdatePhase)
         self.ui.lblCamera.addAction(self.ui.actSaveImage)
+        self.ui.lblCamera.addAction(self.ui.actShowCameraLine)
         self.ui.lblCameraSideView.addAction(self.ui.actSaveGraphic)
         self.ui.actLoadImage.triggered.connect(self.actLoadImageClicked)
         self.ui.actSavePhase.triggered.connect(self.actSavePhaseClicked)
         self.ui.actSaveImage.triggered.connect(self.actSaveImageClicked)
+        self.ui.actShowCameraLine.triggered.connect(self.actShowCameraLineClicked)
         self.ui.actUpdatePhase.triggered.connect(self.actUpdatePhaseClicked)
         self.ui.actSaveGraphic.triggered.connect(self.actSaveGraphicClicked)
         self.ui.actAbout.triggered.connect(self.actAboutClicked)
@@ -209,6 +217,9 @@ class MainWindow(QtWidgets.QMainWindow):
         filename = self.showSaveImageDialog()
         if filename:
             cv2.imwrite(filename, self.phase)
+
+    def actShowCameraLineClicked(self, value):
+        self.camera.show_camera_line = value
 
     def actSaveImageClicked(self):
         camera_image = self.camera.get_image()
