@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, get_warp, find_phase_subregion, avgpool, expand_array
+from optimize import centroid, get_warp, get_warp_inverse, find_phase_subregion, avgpool, expand_array
 
 from PyQt5.QtCore import qDebug
 
@@ -36,6 +36,7 @@ class CameraThread(QtCore.QThread):
         self._graphic_figure = None
         self._mean_index = 0
         
+        self.camera_pool = None
         self.show_camera_line = True
         self.reset_mean = True
         self.capture_beam = True
@@ -91,7 +92,7 @@ class CameraThread(QtCore.QThread):
             canvas.draw()
             size = canvas.size()
             width, height = size.width(), size.height()
-            convertToQtFormat = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+            convertToQtFormat = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32).rgbSwapped()
 
             p1 = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
 
@@ -104,12 +105,17 @@ class CameraThread(QtCore.QThread):
             canvas = FigureCanvas(self._graphic_figure)
             axes = self._graphic_figure.gca()
 
+            yc = None
             if self.position_index == 0:
                 y = self._image[:, self.position_value - 1]
                 yb = self._beam[:, self.position_value - 1]
+                if self.camera_pool is not None:
+                    yc = self.camera_pool[:, self.position_value - 1]
             else:
                 y = self._image[self.position_value - 1, :]
                 yb = self._beam[self.position_value - 1, :]
+                if self.camera_pool is not None:
+                    yc = self.camera_pool[self.position_value - 1, :]
             axes.set_xlim(1, len(y) + 1)
             x = np.arange(1, len(y) + 1)
             ymin, ymax = np.min(self._image), np.max(self._image)
@@ -119,15 +125,21 @@ class CameraThread(QtCore.QThread):
                 axes.set_ylim(gmin, gmax)
             axes.set_xlabel('Posicao')
             axes.set_ylabel('Intensidade')
-            axes.plot(x, y, color='blue')
-            axes.plot(x, yb, color='black')
+            axes.plot(x, yb, color='black', zorder = 13, alpha = 0.7)
+            line, = axes.plot(x, y, color='blue', linestyle = 'solid', alpha = 1.0, linewidth = 1.0, zorder = 15)
+            if yc is not None:
+                axes.plot(x, yc, color='blue', linestyle = 'solid', alpha = 1.0, linewidth = 1.0, zorder = 15)
+                line.set_alpha(0.7)
+                line.set_zorder(14)
+                line.set_linewidth(0.1)
+                #line.set_linestyle('solid')
             if self.correction_value is not None:
-                axes.axhline(y = self.correction_value, color='blue', linestyle='dashed')
+                axes.axhline(y = self.correction_value, color='red', linestyle='dashed', alpha = 0.5, zorder = 8)
 
             canvas.draw()
             size = canvas.size()
             width, height = size.width(), size.height()
-            p2 = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32)
+            p2 = QtGui.QImage(canvas.buffer_rgba(), width, height, QtGui.QImage.Format_ARGB32).rgbSwapped()
             
 
             self.changePixmap.emit([p1, p2])
@@ -147,6 +159,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.image_correction = None
         self.filename_image = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
+        self.warp_i = get_warp_inverse(self.warp)
 
         self.factor = 1
         self.image_imin = 0
@@ -230,13 +243,13 @@ class MainWindow(QtWidgets.QMainWindow):
 
             self.image_correction = image_correction
             self.firstIter = False
-        else:
-            camera_image = cv2.warpAffine(self.camera.get_image(), self.warp, self.image.shape[::-1])
-            
+        else:           
+            camera_image = cv2.warpAffine(self.camera.get_image(), self.warp, self.image.shape[::-1])            
             camera_sub = camera_image[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
-            image_sub = self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
-            
             camera_sub_pool = avgpool(camera_sub, self.factor)
+            
+            image_sub = self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
+
             image_sub_pool = avgpool(image_sub, self.factor)
 
             diff = camera_sub_pool - self.__image_goal_sub_pool
@@ -245,6 +258,10 @@ class MainWindow(QtWidgets.QMainWindow):
             
             image_sub_l = expand_array(image_sub_pool, self.factor)
             self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)] = image_sub_l
+
+            camera_sub = expand_array(camera_sub_pool, self.factor)
+            camera_image[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)] = camera_sub
+            self.camera.camera_pool = cv2.warpAffine(camera_image, self.warp_i, self.camera.get_camera_shape()[::-1])
 
         self.update(self.ui.sbLineThickness.value())
 
@@ -311,7 +328,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.image_imax = imax
         self.image_jmin = jmin
         self.image_jmax = jmax
-        
+
         isActive = self.timer.isActive()
         self.ui.sbLineThickness.setEnabled(isActive)
         self.ui.pbAlign.setEnabled(isActive)
@@ -319,16 +336,19 @@ class MainWindow(QtWidgets.QMainWindow):
         self.ui.sbBlock.setEnabled(isActive)
         if not isActive:
             self.firstIter = True
+            self.camera.camera_pool = None
             self.timer.start(2000)
             self.ui.pbCorrect.setText("Parar")
         else:
             self.timer.stop()
+            self.camera.camera_pool = None
             self.ui.pbCorrect.setText("Corrigir")
 
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
         warp, match_res = get_warp(self.image, camera_image)
         self.warp = warp
+        self.warp_i = get_warp_inverse(warp)
         img = cv2.warpAffine(camera_image, self.warp, self.image.shape[::-1])
         cv2.imwrite('before.png', camera_image)
         cv2.imwrite('after.png', img)

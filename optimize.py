@@ -80,6 +80,9 @@ def get_warp(image, camera):
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 
+def get_warp_inverse(warp): 
+    return np.array([[warp[1,1], -warp[0,1], warp[0,1]*warp[1,2] - warp[1,1]*warp[0,2]], [-warp[1,0], warp[0,0], warp[1,0]*warp[0,2] - warp[0,0]*warp[1,2]]])/(warp[0,0]*warp[1,1] - warp[0,1]*warp[1,0])
+
 def centroid(image):
     h, w = image.shape
     X = np.arange(1, w + 1)
