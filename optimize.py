@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from sklearn.mixture import GaussianMixture
+#from sklearn.mixture import GaussianMixture
 
 def avgpool(array, factor):
     array_avgpool = np.zeros((array.shape[0] // factor, array.shape[1] // factor), dtype=np.float64)
