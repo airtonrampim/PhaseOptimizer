@@ -6,15 +6,13 @@ from matplotlib.figure import Figure
 from matplotlib.backends.backend_qt5agg import FigureCanvas
 import numpy as np
 
-#TODO: Remover
-#from matplotlib.patches import ConnectionPatch
 
 from scipy.misc import derivative
 import matplotlib.pyplot as plt
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, get_warp
+from optimize import centroid, get_warp, find_phase_subregion, avgpool, expand_array
 
 from PyQt5.QtCore import qDebug
 
@@ -149,9 +147,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self.image_correction = None
         self.filename_image = None
         self.warp = np.array([[1, 0, 0], [0, 1, 0]], dtype=np.float32)
-        
-        self.x_ref = SLM_SHAPE[1]
-        self.y_ref = SLM_SHAPE[0]
+
+        self.factor = 1
+        self.image_imin = 0
+        self.image_imax = SLM_SHAPE[1]
+        self.image_jmin = 0
+        self.image_jmax = SLM_SHAPE[0]
 
         self.ui = mainwindow.Ui_MainWindow()
         self.ui.setupUi(self)
@@ -182,6 +183,10 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.curve_width = self.ui.lblCameraSideView.width()
         self.camera.start()
         
+        self.firstIter = True
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self.timerTimeoutEvent)
+        
         self.cbPositionIndexChanged()
         
     # Multithread events ----------------------------------------------------------------------------------------------
@@ -203,6 +208,45 @@ class MainWindow(QtWidgets.QMainWindow):
         self.camera.image_width = self.ui.lblCamera.width()
         self.camera.curve_height = self.ui.lblCameraSideView.height()
         self.camera.curve_width = self.ui.lblCameraSideView.width()
+
+    def timerTimeoutEvent(self):
+        if self.firstIter:
+            aligned_beam = cv2.warpAffine(self.initial_beam, self.warp, self.image.shape[::-1])
+            self.image_goal = self.image.astype(np.float64)*self.ui.sbIntValue.value()/np.max(self.image)
+            image_correction = self.image_goal.copy()
+            
+            image_sub = image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
+            beam_sub = aligned_beam[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
+
+            image_sub_pool = avgpool(image_sub, self.factor)
+            self.__image_goal_sub_pool = image_sub_pool.copy()
+            beam_sub_pool = avgpool(beam_sub, self.factor)
+            
+            image_sub_pool[np.nonzero(beam_sub_pool)] = image_sub_pool[np.nonzero(beam_sub_pool)]/beam_sub_pool[np.nonzero(beam_sub_pool)]
+            image_sub_pool = 2*np.arcsin(np.clip(image_sub_pool, 0, 1))*128/np.pi
+
+            image_sub_l = expand_array(image_sub_pool, self.factor)
+            image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)] = image_sub_l
+
+            self.image_correction = image_correction
+            self.firstIter = False
+        else:
+            camera_image = cv2.warpAffine(self.camera.get_image(), self.warp, self.image.shape[::-1])
+            
+            camera_sub = camera_image[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
+            image_sub = self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
+            
+            camera_sub_pool = avgpool(camera_sub, self.factor)
+            image_sub_pool = avgpool(image_sub, self.factor)
+
+            diff = camera_sub_pool - self.__image_goal_sub_pool
+            image_sub_pool = image_sub_pool - np.sign(diff)
+            image_sub_pool = np.clip(image_sub_pool, 0, 128)
+            
+            image_sub_l = expand_array(image_sub_pool, self.factor)
+            self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)] = image_sub_l
+
+        self.update(self.ui.sbLineThickness.value())
 
     def actLoadImageClicked(self):
         if self.initial_beam is None:
@@ -259,19 +303,35 @@ class MainWindow(QtWidgets.QMainWindow):
             self.showDialog(QtWidgets.QMessageBox.Abort, 'Erro', 'Perfil do feixe não capturado.')
             return
 
-        aligned_beam = cv2.warpAffine(self.initial_beam, self.warp, self.image.shape[::-1])
-        image_correction = self.image.astype(np.float64)*self.ui.sbIntValue.value()/np.max(self.image)
-        image_correction[np.nonzero(aligned_beam)] = image_correction[np.nonzero(aligned_beam)]/aligned_beam[np.nonzero(aligned_beam)]
-        image_correction = np.where(image_correction > 1, 1., np.sqrt(image_correction))
-        self.image_correction = (2*np.arcsin(image_correction)*255/np.pi)
         self.camera.correction_value = self.ui.sbIntValue.value()
-
-        self.update(self.ui.sbLineThickness.value())
+        self.factor = self.ui.sbBlock.value()
+        
+        imin, imax, jmin, jmax = find_phase_subregion(self.image, self.factor)
+        self.image_imin = imin
+        self.image_imax = imax
+        self.image_jmin = jmin
+        self.image_jmax = jmax
+        
+        isActive = self.timer.isActive()
+        self.ui.sbLineThickness.setEnabled(isActive)
+        self.ui.pbAlign.setEnabled(isActive)
+        self.ui.sbIntValue.setEnabled(isActive)
+        self.ui.sbBlock.setEnabled(isActive)
+        if not isActive:
+            self.firstIter = True
+            self.timer.start(2000)
+            self.ui.pbCorrect.setText("Parar")
+        else:
+            self.timer.stop()
+            self.ui.pbCorrect.setText("Corrigir")
 
     def pbAlignClicked(self):
         camera_image = self.camera.get_image()
         warp, match_res = get_warp(self.image, camera_image)
         self.warp = warp
+        img = cv2.warpAffine(camera_image, self.warp, self.image.shape[::-1])
+        cv2.imwrite('before.png', camera_image)
+        cv2.imwrite('after.png', img)
         self.ui.lblConfidence.setText("Confidência: %.2f%%" % (100*match_res))
         self.ui.lblIntValue.setEnabled(True)
         self.ui.sbIntValue.setEnabled(True)

@@ -2,31 +2,58 @@ import cv2
 import numpy as np
 from sklearn.mixture import GaussianMixture
 
+def avgpool(array, factor):
+    array_avgpool = np.zeros((array.shape[0] // factor, array.shape[1] // factor), dtype=np.float64)
+    np.add.at(array_avgpool, (np.arange(array.shape[0])[:, np.newaxis] // factor, np.arange(array.shape[1]) // factor), array)
+    return array_avgpool/(factor**2)
+
+def expand_array(array, factor):
+    return np.repeat(np.repeat(array, factor, axis = 0), factor, axis = 1)
+
+def find_phase_subregion(phase, factor):
+    i, j = np.where(phase > 0)
+    imin, imax = np.min(i), np.max(i) + 1
+    jmin, jmax = np.min(j), np.max(j) + 1
+
+    # Resize the region to a multiple of factor for each axis
+    iresize = (imax - imin) % factor
+    if iresize != 0:
+        iresize = factor - iresize
+    jresize = (jmax - jmin) % factor
+    if jresize != 0:
+        jresize = factor - jresize
+    imin_l = imin - (iresize // 2)
+    imax_l = imax + (iresize // 2) + (iresize % 2) - 1
+    jmin_l = jmin - (jresize // 2)
+    jmax_l = jmax + (jresize // 2) + (jresize % 2) - 1
+
+    return imin_l, imax_l, jmin_l, jmax_l
 
 #https://stackoverflow.com/a/60064072/9257438
 def get_corners(image, apply_threshold):    
     thresh_res = image
     if apply_threshold:
-        gmm = GaussianMixture(n_components=2).fit(image.flatten().reshape(-1,1))
+        #gmm = GaussianMixture(n_components=2).fit(image.flatten().reshape(-1,1))
 
-        mu1 = gmm.means_.flatten()[0]
-        sigma1 = np.sqrt(gmm.covariances_.flatten()[0])
-        mu2 = gmm.means_.flatten()[1]
-        sigma2 = np.sqrt(gmm.covariances_.flatten()[1])    
-        if mu1 > mu2:
-            mu1 = gmm.means_.flatten()[1]
-            sigma1 = np.sqrt(gmm.covariances_.flatten()[1])
-            mu2 = gmm.means_.flatten()[0]
-            sigma2 = np.sqrt(gmm.covariances_.flatten()[0])
+        #mu1 = gmm.means_.flatten()[0]
+        #sigma1 = np.sqrt(gmm.covariances_.flatten()[0])
+        #mu2 = gmm.means_.flatten()[1]
+        #sigma2 = np.sqrt(gmm.covariances_.flatten()[1])    
+        #if mu1 > mu2:
+            #mu1 = gmm.means_.flatten()[1]
+            #sigma1 = np.sqrt(gmm.covariances_.flatten()[1])
+            #mu2 = gmm.means_.flatten()[0]
+            #sigma2 = np.sqrt(gmm.covariances_.flatten()[0])
 
-        thresh_value = mu1
-        if sigma1 == sigma2:
-            if mu1 != mu2:
-                thresh_value = (mu1+mu2)/2
-        else:
-            thresh_value = (sigma2**2*mu1-sigma1**2*mu2)/(sigma2**2-sigma1**2) + sigma1*sigma2/(sigma2**2-sigma1**2)*np.sqrt((mu2-mu1)**2+2*(sigma2**2-sigma1**2)*np.log(sigma2/sigma1))
+        #thresh_value = mu1
+        #if sigma1 == sigma2:
+            #if mu1 != mu2:
+                #thresh_value = (mu1+mu2)/2
+        #else:
+            #thresh_value = (sigma2**2*mu1-sigma1**2*mu2)/(sigma2**2-sigma1**2) + sigma1*sigma2/(sigma2**2-sigma1**2)*np.sqrt((mu2-mu1)**2+2*(sigma2**2-sigma1**2)*np.log(sigma2/sigma1))
 
-        thresh_value, thresh = cv2.threshold(image, thresh_value, 255, cv2.THRESH_BINARY)
+        #thresh_value, thresh = cv2.threshold(image, thresh_value, 255, cv2.THRESH_BINARY)
+        thresh_value, thresh = cv2.threshold(image, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
         kernel = np.ones((3,3), np.uint8)
         thresh_res = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 

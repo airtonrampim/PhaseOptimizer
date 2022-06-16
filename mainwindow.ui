@@ -56,43 +56,6 @@
        <string>Padrão de fase</string>
       </property>
       <layout class="QGridLayout" name="gridLayout_3">
-       <item row="8" column="0" colspan="3">
-        <widget class="QPushButton" name="pbAlign">
-         <property name="text">
-          <string>A&amp;linhar</string>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="7">
-        <widget class="QLabel" name="lblIntValue">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Intensidade máxima:</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-         </property>
-        </widget>
-       </item>
-       <item row="8" column="9">
-        <widget class="QPushButton" name="pbCorrect">
-         <property name="enabled">
-          <bool>false</bool>
-         </property>
-         <property name="text">
-          <string>Corrigir</string>
-         </property>
-        </widget>
-       </item>
-       <item row="5" column="0" colspan="10">
-        <widget class="Line" name="line">
-         <property name="orientation">
-          <enum>Qt::Horizontal</enum>
-         </property>
-        </widget>
-       </item>
        <item row="1" column="3">
         <widget class="QSpinBox" name="sbLineThickness">
          <property name="maximumSize">
@@ -116,10 +79,10 @@
          </property>
         </widget>
        </item>
-       <item row="8" column="3">
-        <widget class="QLabel" name="lblConfidence">
+       <item row="8" column="0" colspan="3">
+        <widget class="QPushButton" name="pbAlign">
          <property name="text">
-          <string>Confidência: 000.00%</string>
+          <string>A&amp;linhar</string>
          </property>
         </widget>
        </item>
@@ -136,7 +99,34 @@
          </property>
         </spacer>
        </item>
-       <item row="0" column="2" colspan="8">
+       <item row="8" column="7">
+        <widget class="QLabel" name="lblIntValue">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Intensidade máxima:</string>
+         </property>
+         <property name="alignment">
+          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+        </widget>
+       </item>
+       <item row="5" column="0" colspan="12">
+        <widget class="Line" name="line">
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="3">
+        <widget class="QLabel" name="lblConfidence">
+         <property name="text">
+          <string>Confidência: 000.00%</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="2" colspan="10">
         <widget class="QLabel" name="lblPhase">
          <property name="contextMenuPolicy">
           <enum>Qt::ActionsContextMenu</enum>
@@ -162,6 +152,30 @@
          </property>
          <property name="value">
           <number>255</number>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="9">
+        <widget class="QLabel" name="lblBlock">
+         <property name="text">
+          <string>Bloco:</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="11">
+        <widget class="QPushButton" name="pbCorrect">
+         <property name="enabled">
+          <bool>false</bool>
+         </property>
+         <property name="text">
+          <string>Corrigir</string>
+         </property>
+        </widget>
+       </item>
+       <item row="8" column="10">
+        <widget class="QSpinBox" name="sbBlock">
+         <property name="minimum">
+          <number>1</number>
          </property>
         </widget>
        </item>
@@ -338,6 +352,8 @@
  <tabstops>
   <tabstop>sbLineThickness</tabstop>
   <tabstop>pbAlign</tabstop>
+  <tabstop>sbIntValue</tabstop>
+  <tabstop>sbBlock</tabstop>
   <tabstop>pbCorrect</tabstop>
   <tabstop>cbPosition</tabstop>
   <tabstop>sbPositionValue</tabstop>

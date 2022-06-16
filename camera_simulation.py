@@ -8,7 +8,7 @@ def generate_beam(shape, wl):
     I, J = np.meshgrid(I, J)
     i0, j0 = width/2., height/2.
 
-    return np.exp(-((I-i0)**2.0 + (J-j0)**2.0)/(wl**2.0))
+    return 240*np.exp(-((I-i0)**2.0 + (J-j0)**2.0)/(wl**2.0))
 
 def generate_noise(coord, shape, wl):
     height, width = shape
@@ -20,13 +20,14 @@ def generate_noise(coord, shape, wl):
 class Camera():
     def __init__(self, shape, monitor = 1):
         self.wl = 250
-        #self.beam = generate_noise((600, 550),shape,20)*generate_beam(shape, wl)
-        self.phase = np.zeros(shape)
-        self.beam = generate_beam(shape, self.wl)
+        self.shape = shape
+        self.camera_shape = (480, 640)
+        self.phase = np.zeros(self.shape)
+        self.beam = generate_beam(self.shape, self.wl)
+        self.pert = 1 - 0.25*np.random.random(size=self.camera_shape)
         self.time = time.time()
         
         self.field = self.beam.astype(np.complex128)
-        self.camera_shape = (480, 640)
 
         self.monitor = monitor
 
@@ -46,14 +47,11 @@ class Camera():
         self.field = np.fft.ifft2(field_f0)
 
     def get_image(self):
-        #now = time.time()
-        #if now - self.time > 0.1:
-            #self.beam = generate_beam(self.camera_shape, self.wl)*(1 - np.random.normal(size=self.camera_shape))
-            #self.set_phase(self.phase)
-            #self.time = now
+        now = time.time()
+        if now - self.time > 0.1:
+            self.pert = 1 - 0.25*np.random.random(size=self.camera_shape)
         image = np.abs(self.field)
-        beam_amp = np.max(self.beam)
-        image_l = cv2.warpAffine(240*image**2/beam_amp**2, np.array([[0.7*np.cos(0.05), 0.7*np.sin(0.05), -100], [-0.7*np.sin(0.05), 0.7*np.cos(0.05), -50]], dtype=np.float64), self.camera_shape[::-1])
+        image_l = cv2.warpAffine(image, np.array([[0.7*np.cos(0.05), 0.7*np.sin(0.05), -100], [-0.7*np.sin(0.05), 0.7*np.cos(0.05), -50]], dtype=np.float64), self.camera_shape[::-1])*self.pert
         return np.floor(image_l).astype(np.uint8)
     
     def close(self):
