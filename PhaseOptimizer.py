@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 
 from phase import generate_pishift
 from camera import Camera
-from optimize import centroid, get_warp, get_warp_inverse, find_phase_subregion, avgpool, expand_array
+from optimize import centroid, get_warp, get_warp_inverse, find_phase_subregion, collapse_array, expand_array
 
 from PyQt5.QtCore import qDebug
 
@@ -96,7 +96,6 @@ class CameraThread(QtCore.QThread):
 
             p1 = convertToQtFormat.scaled(self.image_width, self.image_height, QtCore.Qt.KeepAspectRatio)
 
-            
             w = self.curve_width/matplotlib.rcParams["figure.dpi"]
             h = self.curve_height/matplotlib.rcParams["figure.dpi"]
 
@@ -231,9 +230,9 @@ class MainWindow(QtWidgets.QMainWindow):
             image_sub = image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
             beam_sub = aligned_beam[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
 
-            image_sub_pool = avgpool(image_sub, self.factor)
+            image_sub_pool = collapse_array(image_sub, self.factor)
             self.__image_goal_sub_pool = image_sub_pool.copy()
-            beam_sub_pool = avgpool(beam_sub, self.factor)
+            beam_sub_pool = collapse_array(beam_sub, self.factor)
             
             image_sub_pool[np.nonzero(beam_sub_pool)] = image_sub_pool[np.nonzero(beam_sub_pool)]/beam_sub_pool[np.nonzero(beam_sub_pool)]
             image_sub_pool = 2*np.arcsin(np.clip(image_sub_pool, 0, 1))*128/np.pi
@@ -246,11 +245,11 @@ class MainWindow(QtWidgets.QMainWindow):
         else:           
             camera_image = cv2.warpAffine(self.camera.get_image(), self.warp, self.image.shape[::-1])            
             camera_sub = camera_image[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
-            camera_sub_pool = avgpool(camera_sub, self.factor)
+            camera_sub_pool = collapse_array(camera_sub, self.factor)
             
             image_sub = self.image_correction[self.image_imin:(self.image_imax + 1), self.image_jmin:(self.image_jmax + 1)]
 
-            image_sub_pool = avgpool(image_sub, self.factor)
+            image_sub_pool = collapse_array(image_sub, self.factor)
 
             diff = camera_sub_pool - self.__image_goal_sub_pool
             image_sub_pool = image_sub_pool - np.sign(diff)
@@ -350,6 +349,7 @@ class MainWindow(QtWidgets.QMainWindow):
         self.warp = warp
         self.warp_i = get_warp_inverse(warp)
         img = cv2.warpAffine(camera_image, self.warp, self.image.shape[::-1])
+        np.savetxt('warp.txt', self.warp)
         cv2.imwrite('before.png', camera_image)
         cv2.imwrite('after.png', img)
         self.ui.lblConfidence.setText("Confidência: %.2f%%" % (100*match_res))

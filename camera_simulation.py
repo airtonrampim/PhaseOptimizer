@@ -8,7 +8,7 @@ def generate_beam(shape, wl):
     I, J = np.meshgrid(I, J)
     i0, j0 = width/2., height/2.
 
-    return 240*np.exp(-((I-i0)**2.0 + (J-j0)**2.0)/(wl**2.0))
+    return 150*np.exp(-((I-i0)**2.0 + (J-j0)**2.0)/(wl**2.0))
 
 class Camera():
     def __init__(self, shape, monitor = 1):
@@ -40,7 +40,7 @@ class Camera():
         y = np.arange(-h//2, h//2 + (h % 2))
         x, y = np.meshgrid(x, y)
         x0, y0 = 0, 0
-        size = 100
+        size = 150
         P = ((x - x0)**2 + (y - y0)**2 <= size**2)
         field_f0 = P*field_f
 
@@ -52,8 +52,8 @@ class Camera():
             self.pert = 1 - 0.15*np.random.random(size=self.camera_shape)
         image = np.abs(self.field)
         image_l = cv2.warpAffine(image, np.array([[1.2*np.cos(0.05), -1.2*np.sin(0.05), -350], [1.2*np.sin(0.05), 1.2*np.cos(0.05), -400]], dtype=np.float64), self.camera_shape[::-1])*self.pert_static*self.pert
-        return np.floor(image_l).astype(np.uint8)
-    
+        return np.floor(image_l).astype(np.uint8) + 40
+
     def close(self):
         pass
         #self.field = self.beam.astype(np.complex128)

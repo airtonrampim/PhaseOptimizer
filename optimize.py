@@ -5,7 +5,15 @@ import numpy as np
 def avgpool(array, factor):
     array_avgpool = np.zeros((array.shape[0] // factor, array.shape[1] // factor), dtype=np.float64)
     np.add.at(array_avgpool, (np.arange(array.shape[0])[:, np.newaxis] // factor, np.arange(array.shape[1]) // factor), array)
-    return array_avgpool/(factor**2)
+    return np.round(array_avgpool/(factor**2)).astype(array.dtype)
+
+def maxpool(array, factor):
+    array_maxpool = np.full((array.shape[0] // factor, array.shape[1] // factor), 0, dtype=array.dtype)
+    np.maximum.at(array_maxpool, (np.arange(array.shape[0])[:, np.newaxis] // factor, np.arange(array.shape[1]) // factor), array)
+    return array_maxpool
+
+def collapse_array(array, factor):
+    return avgpool(array, factor)
 
 def expand_array(array, factor):
     return np.repeat(np.repeat(array, factor, axis = 0), factor, axis = 1)
@@ -77,6 +85,10 @@ def get_corners(image, apply_threshold):
 def get_warp(image, camera):
     image_box = get_corners(image, False)
     camera_box = get_corners(camera, True)
+
+    image_box = image_box[np.argsort(np.sum(image_box**2, axis = 1))]
+    camera_box = camera_box[np.argsort(np.sum(camera_box**2, axis = 1))]
+
     warp, match_res = cv2.estimateAffine2D(camera_box, image_box)
     return warp, np.sum(match_res)/len(match_res)
 
