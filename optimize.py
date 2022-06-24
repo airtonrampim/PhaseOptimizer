@@ -3,20 +3,20 @@ import numpy as np
 #from sklearn.mixture import GaussianMixture
 
 def avgpool(array, factor):
-    array_avgpool = np.zeros((array.shape[0] // factor, array.shape[1] // factor), dtype=np.float64)
-    np.add.at(array_avgpool, (np.arange(array.shape[0])[:, np.newaxis] // factor, np.arange(array.shape[1]) // factor), array)
-    return np.round(array_avgpool/(factor**2)).astype(array.dtype)
+    array_avgpool = np.zeros((array.shape[0] // (2*factor), array.shape[1] // factor), dtype=np.float64)
+    np.add.at(array_avgpool, (np.arange(array.shape[0])[:, np.newaxis] // (2*factor), np.arange(array.shape[1]) // factor), array)
+    return np.round(array_avgpool/(2*factor**2)).astype(array.dtype)
 
 def maxpool(array, factor):
-    array_maxpool = np.full((array.shape[0] // factor, array.shape[1] // factor), 0, dtype=array.dtype)
-    np.maximum.at(array_maxpool, (np.arange(array.shape[0])[:, np.newaxis] // factor, np.arange(array.shape[1]) // factor), array)
+    array_maxpool = np.full((array.shape[0] // (2*factor), array.shape[1] // factor), 0, dtype=array.dtype)
+    np.maximum.at(array_maxpool, (np.arange(array.shape[0])[:, np.newaxis] // (2*factor), np.arange(array.shape[1]) // factor), array)
     return array_maxpool
 
 def collapse_array(array, factor):
     return avgpool(array, factor)
 
 def expand_array(array, factor):
-    return np.repeat(np.repeat(array, factor, axis = 0), factor, axis = 1)
+    return np.repeat(np.repeat(array, 2*factor, axis = 0), factor, axis = 1)
 
 def find_phase_subregion(phase, factor):
     i, j = np.where(phase > 0)
@@ -24,9 +24,9 @@ def find_phase_subregion(phase, factor):
     jmin, jmax = np.min(j), np.max(j) + 1
 
     # Resize the region to a multiple of factor for each axis
-    iresize = (imax - imin) % factor
+    iresize = (imax - imin) % (2*factor)
     if iresize != 0:
-        iresize = factor - iresize
+        iresize = 2*factor - iresize
     jresize = (jmax - jmin) % factor
     if jresize != 0:
         jresize = factor - jresize

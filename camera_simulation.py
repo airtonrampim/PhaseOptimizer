@@ -24,7 +24,8 @@ class Camera():
         y = np.arange(-h//2, h//2 + (h % 2))
         x, y = np.meshgrid(x, y)
 
-        self.pert_static = 1 - 0.3*np.abs(np.sin(y*np.pi/65))**1.5
+        self.pert_static = 1 - 0.3*np.abs(np.sin(y*np.pi/300))**1.47
+        self.pert_static = self.pert_static*(1 - 0.35*np.random.random(size=self.camera_shape))
         self.time = time.time()
 
         self.field = self.beam.astype(np.complex128)
